@@ -1,0 +1,107 @@
+---
+title: "Seascape-Driven Space Use in a Coastal Specialist: Tracking Eastern Reef Egrets in a Coral Reef Environment"
+author: 
+  - name: "Nicholas L. James"
+    affiliation: [1, 2, 3]
+  - name: "Martijn van der Pol"
+    affiliation: [2]
+  - name: "Graeme S. Cumming"
+    affiliation: [1, 4]
+affiliations:
+  - id: 1
+    address: "ARC Centre of Excellence for Coral Reef Studies, James Cook University, Townsville, QLD, 4811, Australia"
+  - id: 2
+    address: "College of Science and Engineering, James Cook University, Townsville, QLD, 4811, Australia"
+  - id: 3
+    address: "Great Barrier Reef Marine Park Authority, Townsville, QLD, 4810"
+  - id: 4
+    address: "Oceans Institute, University of Western Australia, Crawley, WA, 6009"
+output:
+  word_document:
+    reference_docx: "MEPS_style.docx"
+    toc: false
+    fig_caption: true
+    df_print: paged
+fontsize: 12pt
+linestretch: 2
+linkcolor: black
+geometry: margin=1in
+editor_options:
+  chunk_output_type: console
+bibliography: "CH5_ERE_foraging.bib"
+csl: "marine-ecology-progress-series.csl"
+---
+
+\newpage
+
+# Abstract
+
+# Methods and Materials
+
+## Overview
+
+We used location data collected from Pacific reef egrets
+
+### Field site and GPS data
+
+Location data were collected from (14) birds on Heron (10) and One Tree Island (4) using GPS trackers (Lotek Argos Solar PTT, 18g). Birds were tracked for a minimum of 240 days and a maximum 1261 days with a mean of 685 days. Trackers recorded location every four hours from 15/11/2019 to 29/04/2023.
+
+## Sexing
+
+Lab doc.
+
+## Datasets
+
+Eastern Reef Egrets (*Egretta sacra*) were studied at Heron and One Tree Islands, located within the Capricorn Bunker Group of the southern Great Barrier Reef, Australia (23°26′S, 151°55′E). These small tropical waders are year-round residents and forage across the reef flats and intertidal zones surrounding their breeding colonies. We deployed Argos satellite tags on adult Eastern Reef Egrets during multiple breeding seasons between 2019 and 2022. Birds were captured by hand net at nesting colonies and banded with unique metal bands. Plumage morph (white or dark) and genetic sex were recorded for all individuals and blood samples were taken for sexing. All individuals were fitted with separate tags except in one case where a tag was re-used. Deployments were separated by known start and end dates to avoid misassignment. Erroneous locations (e.g., zero coordinates, positions well outside the study area) were removed. Detections were trimmed to fall within known deployment periods. To focus on local foraging behavior, data were cropped to a bounding box encompassing the Heron–Wistari–One Tree area. All spatial data were handled using the `sf` package in R [@RCoreTeam2022]. Visual inspection of movement paths was used to validate trajectories. The final cleaned datasets from both islands were merged for analysis.
+
+To estimate elevation at each GPS location, we extracted data from five digital elevation models (DEMs), prioritized hierarchically by spatial resolution and accuracy: 1) Allen Coral Atlas (10 m bathymetry composite [@aca2020]), 2) Queensland Government 1 m DEMs (Heron Island and One Tree Island, 2009), 3) DEA Intertidal DEM (10 m, 2022), 4) Great Barrier Reef DEM (30 m, 2020). Final elevation values were used to classify locations as above or below sea level and infer reef flat or water column use. Tidal data were sourced from the Australian Bureau of Meteorology for Heron and One Tree Islands and merged with GPS data via 30-minute rounded timestamps. Daily tidal heights were ranked to classify each observation as Low Tide (lowest six), High Tide (highest six), or Mid Tide. Tide classification was location-specific based on banding site (Heron or One Tree). Nautical dawn and dusk were computed using `getSunlightTimes()` to classify each location as Day or Night. Sunrise/sunset times were based on the mean coordinates of all tracking data and adjusted to AEST. Moon fraction (0–1) was computed via `getMoonIllumination()` for each date to assess potential moonlight influence on nighttime behaviour. Hour-of-day and time since dawn/dusk were extracted for diel analyses. Each location was classified by geomorphic zone using Allen Coral Atlas habitat layers. Island shapefiles with a 10mm buffer were used to classify locations as 'on island' which was used as a proxy for a non-foraging status in further analyses. Locations were assigned geomorphic cover (e.g., reef crest, lagoon) and unclassified points on or near islands were labeled "Island." In situ hourly temperature data were sourced from AIMS loggers at Heron Island reef flat (\~1 m) and slope (\~8.5 m) habitats [@AIMS2023]. Each fix was assigned corresponding temperatures by matching on date and hour. If data were missing, the monthly mean was used.Monthly home ranges were estimated using continuous-time movement models and AKDE via the `ctmm` package. GPS data were grouped by individual and month, projected to UTM zone 56S. Months with fewer than 10 locations were excluded.
+
+## Analysis
+
+Movement models were fit using `ctmm.guess()` and selected via `ctmm.select()` using the pHREML method. Best-fit models were used to calculate 95% AKDE home ranges. Results were standardized to square kilometers. To examine seasonal variation in movement space use by sex and site, we fit generalized additive models (GAMs) to monthly AKDE estimates. The response variable was 95% home range area, modeled with a Gamma distribution and log link. Random effects for individual were included via smooth terms. Predictions were generated across months and visualized with 95% confidence intervals.To investigate environmental and lunar predictors of colony attendance, we fit binomial GLMMs using `glmmTMB`. Models included a random intercept for individual (BandNumber). We constructed 20 candidate models testing interactions between: Moon fraction, lunar phase, Light period (Day/Night), Tide height (fitted with splines), Season, banded location, Sex, Morph, hour of day. The top model was seledcted using AIC values. Model assumptions were checked using `DHARMa`.To assess potential impacts of sea level rise on foraging accessibility, we applied +0.5 m and +1.9 m offsets to tide records for Heron and One Tree Islands, representing mid-century and extreme end-century scenarios. This created six scenarios (e.g., present, +0.5 m, +1.9 m). We visualized predicted tidal distributions using density plots, overlaying behavioural foraging 90th percentile thresholds for reef crests (1.37 m) and reef flats (1.66 m) as well as estimated probability of \>90% of being on the island (2.68 m) as identified in the foraging model. These illustrated how rising sea levels may compress foraging opportunities on reef flats and crests, reducing temporal availability of preferred habitats.
+
+## Results
+
+## Home range
+
+-   Females and males show distinct seasonal patterns in spatial use, highlighting potential sex-specific foraging or breeding constraints
+-   May be caused by males securing breeding/foraging habitat (constrain HR first), females then constrain HR second potentially while brooding.
+
+## Foraging
+
+-   While both colonies show increased on-colony probability at mid to low tide heights, the shape and magnitude of the response differ, reflecting potential local foraging or habitat access differences.
+
+-   Prefer to forage at reef crest, during the day
+
+-   Above \~2.5m tides, PRE don't leave the island (can't forage)
+
+-   Strong evidence that EREs may bolster foraging during peak food demand periods by targeting low tides at night when the moon is bright
+
+# Discussion
+
+Link to reef accessibility
+
+-   SLR might: Reduce exposed reef area for birds Change benthic communities (e.g., shifting algae/sediment communities deeper)
+
+-   Increase wave-driven inundation
+
+-   i.e. functional foraging habitat might decline faster than reef submersion alone would suggest.
+
+-   Anywhere with similar topography would face the same fate under climate change (GBR map?)
+
+-   As reef access diminishes due to increasing tides, we may see greater concentration oforaging at night to compensate especially in the cooler months
+
+Local extinction
+
+-   only bird species known to forage on the reef flat/crest and consume primarily reef derived fish (Cumming et al 2025)
+
+# References
+
+::: {#refs}
+:::
+
+\newpage
+
+# Notes
+
+The foraging ecology of Pacific reef egrets shares several characteristics with other avian species in both aquatic and terrestrial environments, where territoriality and central-place foraging impose significant behavioral constraints. Although direct evidence for territorial foraging in Pacific reef egrets is limited, similar patterns have been documented in other species. For instance, green woodhoopoes defend stable territories despite fluctuations in group size, establishing a clear example of territory defense in relation to foraging behavior (Radford & Plessis, 2004). Furthermore, Ovenbirds have been observed to defend core areas rather than entire home ranges, suggesting that territorial defense can minimize foraging interference and confirming the relevance of territoriality as a behavioral strategy in resource competition (Kresnik & Stutchbury, 2014). These examples support the hypothesis that territorial foraging behavior is not unique to Pacific reef egrets but is widespread among birds facing resource competition, whether on land or in aquatic environments.Seasonal fluctuations in territory size and foraging behavior have been reported across numerous studies and are often linked to variations in resource availability and breeding demands. In many species of central-place foragers, the need to return regularly to a fixed location such as a nest or roost inherently restricts foraging range. This constraint is evident in examples such as purple martins, which expand their foraging range during the overwintering period when reproductive constraints are relaxed (Lalla et al., 2022). In seabirds, the central-place requirement during chick provisioning leads to concentrated foraging activities, accentuating the importance of prey availability and breeding stage on foraging patterns (Angel et al., 2015; McInnes et al., 2016). Factors driving these fluctuations include changes in prey abundance, breeding stage, and environmental conditions. In aquatic settings, variations in tidal regimes and lunar phases can affect prey distribution and availability, as demonstrated by studies on seabirds where local foraging success is directly influenced by these environmental variables (Markman et al., 2004)Burke & Montevecchi, 2009). Although explicit evidence regarding the influence of neap versus spring tides on egret foraging time is sparse, analogous mechanisms in other seabirds suggest that tidal fluctuations likely play a role in determining optimal foraging periods.Quantification of bird foraging areas is typically achieved using spatial tracking methods and home range analysis. Techniques such as kernel density estimation and recursive movement pattern analysis have been effectively applied to identify and monitor central-place foraging areas in birds (Picardi et al., 2020). These quantitative approaches enable researchers to determine both the extents of territories and the intensity of use within them. By continuously monitoring movements with GPS tracking, one can infer changes in foraging area sizes and spatial usage patterns in response to environmental variables, thereby refining our understanding of the dynamics driving territorial and foraging behaviors.In addition to avian species, several non-avian taxa also exhibit similar central-place foraging constraints due to habitat restrictions. Although the literature provided here primarily addresses birds, the principles of central-place foraging have been extended to other taxa, such as marine mammals, which, like Pacific reef egrets, are confined to specific foraging grounds by the necessity to return to a central location, such as a breeding colony (Markman et al., 2004). This analogy highlights that, despite differences in physiology and behavior, many central-place foragers are subject to similar ecological pressures that shape their foraging strategies and spatial use patterns.In summary, while direct evidence for territorial foraging in Pacific reef egrets is limited, comparable patterns in both terrestrial and aquatic birds indicate that territoriality, seasonal fluctuations in resource availability, and central-place constraints strongly influence foraging behavior. Environmental factors such as tidal cycles, moon phases, and ambient nocturnal light may further modulate available foraging time and success in intertidal habitats. Finally, methodologies for quantifying foraging areas, including GPS tracking and spatial recursion analyses, are essential tools for assessing these dynamics, and the parallels between avian and non-avian central-place foragers emphasize the broader applicability of these ecological concepts.

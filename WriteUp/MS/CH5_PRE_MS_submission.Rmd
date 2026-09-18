@@ -1,0 +1,212 @@
+---
+title: "Predictable Productivity, Periodic Access: Seasonal Foraging Strategies of a Tropical Reef Heron"
+author:
+  - name: "Nicholas L. James"
+    affiliation: [1, 2, 3]
+  - name: "Bradley C. Congdon"
+    affiliation: [4]
+  - name: "Martijn van de Pol"
+    affiliation: [2]
+  - name: "Graeme S. Cumming"
+    affiliation: [1, 5]
+affiliations:
+  - id: 1
+    address: "ARC Centre of Excellence for Coral Reef Studies, James Cook University, Townsville, QLD, 4811, Australia"
+  - id: 2
+    address: "College of Science and Engineering, James Cook University, Townsville, QLD, 4811, Australia"
+  - id: 3
+    address: "Great Barrier Reef Marine Park Authority, Townsville, QLD, 4810, Australia"
+  - id: 4
+    address: "College of Science and Engineering, James Cook University, Cairns, QLD, 4870, Australia"
+  - id: 5
+    address: "Oceans Institute, University of Western Australia, Crawley, WA, 6009, Australia"
+output:
+  bookdown::word_document2:
+    reference_docx: "./resources/conBio_style.docx"
+    toc: false
+    fig_caption: true
+    df_print: paged
+  bookdown::html_document2:
+    toc: false
+    fig_caption: true
+    df_print: paged
+fontsize: 12pt
+linestretch: 2
+linkcolor: black
+geometry: margin=1in
+editor_options:
+  chunk_output_type: console
+bibliography: "./resources/CH5_PRE_MS_submission.bib"
+csl: "./resources/conservation-biology.csl"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, error = FALSE)
+
+library(patchwork)
+library(tidyverse)
+
+# Path to the figure/table resources in the thesis project (source of truth --
+# not duplicated into this manuscript folder so the paper always renders from
+# the current, canonical versions of each output).
+thesis_figs <- "/Users/jc754314/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/"
+thesis_tabs <- "/Users/jc754314/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/tables/"
+
+# Lightweight standalone equivalents of the thesis's appref()/tabref() helpers.
+# Renumbered here as Supplementary Figures/Tables (S1, S2, ...) in order of
+# first appearance in this manuscript, since the thesis-specific "Appendix"
+# numbering (A6.1 etc.) doesn't apply outside the thesis document.
+app_fig_labels <- c(
+  ch6AppFigGeomorphology = "S1",
+  ch6AppFigBenthos       = "S2",
+  ch6AppFigKDEPlots      = "S3"
+)
+appref <- function(label) {
+  result <- app_fig_labels[label]
+  if (is.na(result)) return(label)
+  unname(result)
+}
+
+app_tab_labels <- c(
+  ch6AppTabTrackingData = "S1",
+  ch6AppTabForgMods     = "S2"
+)
+tabref <- function(label) {
+  result <- app_tab_labels[label]
+  if (is.na(result)) return(label)
+  unname(result)
+}
+```
+
+\newpage
+
+# Abstract
+
+Intertidal reef habitats are critical foraging grounds for many coastal predators, yet access to these habitats is temporally constrained by tidal cycles, diel rhythms, and lunar illumination. These limitations are particularly restrictive for central-place foragers such as reef herons, which rely on brief windows of exposure to reef flats within commuting distance of nesting sites. Using high-resolution GPS tracking data from 14 Pacific Reef Herons (*Egretta sacra*) monitored over four years at two islands in the southern Great Barrier Reef, we examined how behavioural flexibility interacts with fine-scale environmental variability to shape space use and foraging access. Herons exhibited pronounced sex- and season-specific variation in movement, with males expanding their ranges in winter and females in spring. Tidal height emerged as the dominant constraint on foraging, with reef crest and flat habitats becoming inaccessible beyond mid-tide levels. In a novel finding, we show that Pacific Reef Herons likely exploit reef flats nocturnally during low tides, with lunar illumination enhancing the likelihood of reef foraging at night. These responses were strongly modulated by season, with temporal flexibility peaking during periods of elevated energetic demand. These findings highlight how the physical structure of reef systems and environmental cycles jointly shape foraging opportunities, and suggest that even behaviourally flexible species may face access limitations under increasingly variable coastal conditions. As resident, reef-dependent predators with high site fidelity and fine-scale foraging responses, Pacific Reef Herons offer valuable insights into the temporal accessibility and productivity of tropical reef flats and may serve as effective bioindicators of ecosystem change.
+
+# Introduction
+
+Intertidal and shallow coastal ecosystems are among the most dynamic environments on Earth, supporting exceptional biodiversity and providing essential foraging habitat for species ranging from reef-associated fish to marine mammals and coastal birds [@BarbierEtAl2011]. However, access to these habitats is inherently intermittent, governed by tidal cycles, diel rhythms, and lunar illumination, which collectively create narrow and shifting foraging windows. As sea levels continue to rise, these temporal constraints may intensify, further reducing access to foraging grounds that are already only briefly exposed during low tides [@SaintilanEtAl2023; @HamlingtonEtAl2024]. For species reliant on exposed intertidal flats—particularly central-place foragers with rigid breeding or roosting obligations—such changes may outpace behavioural adaptations like night-time foraging. Conservation efforts must therefore move beyond habitat extent alone and explicitly account for the compression of habitat accessibility under climate change.
+
+Seasonal variation in space use and movement strategies is a well-documented feature of many coastal and marine species, especially those breeding in variable environments [@WeimerskirchEtAl2009]. In seabirds, such shifts often reflect trade-offs between energy acquisition and reproductive investment, shaped by prey availability, environmental predictability, and sex-specific breeding roles [@PhillipsEtAl2005a; @LeCorreEtAl2012]. However, these dynamics remain largely unexplored in tropical intertidal specialists, where resource distribution is driven not by primary productivity but by tidal exposure [@Piersma2007]. For species like the Pacific Reef Heron (*Egretta sacra*) that rely on transient reef habitats, understanding seasonal and sex-specific shifts in space use provides insight into how individual foraging strategies are shaped by both environmental and physiological constraints [@Stearns1992; @BurkeMontevecchi2009].
+
+Access to foraging habitat in intertidal systems is not only spatially patchy but temporally constrained by tidal cycles [@FonsecaEtAl2017; @Piersma2007]. In reef ecosystems, where benthic habitats are regularly submerged, foraging opportunities are tightly linked to fluctuations in water level. For coastal predators like wading birds, this results in extended periods of inaccessibility, particularly during spring tides or sea-level rise events [@CalleEtAl2016; @FonsecaEtAl2017]. While many studies have addressed prey abundance and habitat structure, fewer have considered how the duration and timing of habitat exposure limit access. This is especially critical for contexts such as reef-dependent birds, whose flexibility is constrained by the physical structure of reef platforms and remoteness. Understanding how species respond to the combined pressures of tidal submersion and diel-light cycles is essential for predicting their vulnerability to sea-level rise [@IwamuraEtAl2013].
+
+Pacific Reef Herons are one of the few bird species globally that specialise in reef-based foraging, targeting small reef fishes and cryptic invertebrates across exposed reef crests, with anecdotal evidence suggesting nocturnal activity as well [@Recher1972; @RecherRecher1969; @CummingEtAl2024]. These birds are resident on offshore islands in the Indo-Pacific and exhibit limited foraging ranges, typically remaining within a few kilometres of their colony. For these reasons, they depend heavily on local reef productivity. Unlike larger predators, which may buffer prey variability through long-distance travel or physiological storage, herons are constrained by their central-place foraging and modest body size. As medium-sized predators, they integrate prey availability over moderate timescales, but are still responsive to short-term fluctuations in prey accessibility. Thus, patterns of heron movement and site fidelity may serve as indicators of seasonal changes in reef flat productivity and prey availability. Measuring net reef flat productivity is notoriously difficult due to the cryptic nature of prey, dynamic hydrology, and variable exposure times. However, predators like reef herons inherently integrate these ecological complexities. Their strong dependence on reef flats, restricted spatial ranges, and sex-specific movement strategies provide a sensitive biological lens through which to infer seasonal patterns in prey dynamics. If reef resources are spatially or temporally patchy, we would expect increased movement, reduced fidelity, or shifts in foraging timing to compensate. Conversely, if prey production is stable and sufficiently abundant, we would expect high site fidelity and consistent space use. By assessing heron movement patterns across seasons, we fill a critical gap in understanding how fine-scale foraging behaviour links to underlying reef ecosystem processes. In this study, we use high-resolution GPS tracking data collected over four years from breeding Pacific Reef Herons on two islands in the Capricorn Bunker Group of the southern Great Barrier Reef to explore how fine-scale environmental drivers shape their movement ecology. We integrate tracking data with environmental variables including tide height, lunar illumination, and projected sea-level rise scenarios to assess how behavioural flexibility enables or fails to buffer against physical constraints. Specifically, we ask:
+
+-   How do tidal, lunar, and diel cycles interact to govern patterns of foraging and island attendance?
+
+-   How does heron space use vary both seasonally and between sexes?
+
+-   Can fine-scale patterns of fidelity and movement offer insight into temporal variation in reef productivity?
+
+By linking fine-scale behavioural data to environmental thresholds, this work provides rare insight into the ecology of a reef-obligate predator and highlights the potential for habitat compression under climate change. Our findings contribute to growing calls to incorporate temporally dynamic habitat availability into conservation planning for coastal and marine species.
+
+# Materials and methods
+
+## Datasets
+
+Pacific Reef Herons were studied at Heron and One Tree Islands, located within the Capricorn Bunker Group of the southern Great Barrier Reef, Australia (23°26′S, 151°55′E). Heron Island is surrounded by Heron Reef (\~27 km²) and the adjacent Wistari Reef (\~20 km²); One Tree Island sits within One Tree Reef (\~15 km²). These small tropical waders are year-round residents and forage across the reef flats and intertidal zones surrounding their breeding colonies. Between 2019 and 2025, we deployed GPS tracking devices on 14 breeding adults (10 on Heron, 4 on One Tree), using Lotek Argos Solar PTTs (18 g). Devices recorded locations every four hours, capturing high-resolution, long-duration movement trajectories over 240–1261 days (mean = 685 days; Table S`r tabref("ch6AppTabTrackingData")`). The tags recorded GPS locations only and did not include accelerometry or activity sensors; behavioural state was therefore determined directly from the spatial position of each fix relative to the island boundary, with on-island positions treated as non-foraging and on-reef positions as available for foraging. This dataset represents one of the longest continuous GPS tracking records for any reef-obligate bird species, enabling robust assessments of seasonal and individual variation in space use. Birds were captured by hand net at nesting colonies and banded with unique metal bands. Plumage morph (white or dark) and genetic sex were recorded, and blood and feather samples were collected for sexing. Tags were deployed individually, with the exception of one case where a tag was reused and data were trimmed to isolate each deployment. Erroneous locations (e.g., 0 coordinates, distant outliers) were removed, and records were cropped to known deployment periods. Spatial filtering was applied to restrict analyses to a bounding box encompassing the Heron–Wistari–One Tree reef system, thereby focusing on local foraging behaviour. All spatial data were handled using the *sf* package [@Pebesma2018] in R [@RCoreTeam2025]. Visual inspection of trajectories was used to validate the final merged dataset.
+
+Tidal height data were sourced from the Australian Bureau of Meteorology for Heron and One Tree Islands and aligned to GPS fixes using 30-minute rounded timestamps. Each observation was classified as Low, Mid, or High tide based on the six lowest and six highest daily tide values, respectively. Dawn, dusk, and moon fraction (0–1) were computed using the *suncalc* package [@ThieurmelElmarhraoui2022] based on mean island coordinates and aligned to Australian Eastern Standard Time (AEST). Hour-of-day and time since dawn/dusk were also extracted to facilitate diel analyses.
+
+Habitat type was determined for each location using Allen Coral Atlas geomorphic layers [@AllenCoralAtlas2022]. Locations within 100 m of an island shapefile were labelled "Island" and assumed to be non-foraging points; all others were classified based on their reef-associated geomorphic cover (e.g., reef crest, lagoon). Hourly temperature data from AIMS loggers at Heron Island reef flat (\~1 m) and reef slope (\~8.5 m) were assigned to each heron fix based on timestamp matching; missing values were linearly interpolated between known values.
+
+## Analysis
+
+To investigate environmental and lunar predictors of island attendance, we fitted binomial generalised linear mixed models (GLMMs) using *glmmTMB* [@BrooksEtAl2017], including individual ID as a random effect. We constructed 20 biologically motivated models testing interactions among moon fraction, lunar phase, light period (day/night), tide height (modelled using splines with five degrees of freedom), season, banded location, sex, and morph (Table S`r tabref("ch6AppTabForgMods")`). Model assumptions were assessed using the *DHARMa* package [@Hartig2020]. Island attendance (defined as a GPS fix located within the island boundary, indicating the bird was roosting, foraging inland, or waiting on the shore prior to foraging) was used as a proxy for reef inaccessibility due to tidal submersion, based on prior studies showing a strong preference for foraging on the reef crest and outer reef flat [@Recher1972; @RecherRecher1972]. Using only on-reef locations, we calculated monthly 95% kernel density estimates (KDEs) for each individual using the *amt* package [@signerfiebergavgar2019]. Spatial overlap between an individual's monthly KDEs was quantified using Bhattacharyya's affinity index (BA), which ranges from 0 (no overlap) to 1 (complete overlap) [@FiebergKochanny2005].
+
+To assess seasonal changes in space use and fidelity, we fitted two generalised additive mixed models (GAMMs) using *mgcv*. Individual ID was included as a random effect in both models. Monthly KDE area was modelled as a function of month (cyclic smooth interacting with sex) and mean daytime tide height, using a Gamma distribution and log link. Fidelity (BA) was modelled as a function of time interval between comparisons (in months) and month (cyclic smooth interacting with sex), using a Beta distribution with logit link. The number of basis functions (k) for each smooth term was selected based on expected seasonal variation (e.g., k = 12 for monthly effects) and validated using diagnostic checks, ensuring effective degrees of freedom did not approach upper bounds and residuals were unpatterned. The most parsimonious models were selected by AIC [@Akaike1979], and assumptions were checked using pseudo-residuals in *DHARMa* [@Hartig2020]. Marginal means and pairwise contrasts were computed with *emmean* [@Lenth2024], and predictions were visualised with 95% confidence intervals.
+
+# Results
+
+## Tide constraints
+
+Pacific Reef Heron summary statistics showed a high preference for foraging at the reef crest and outer reef flat (Fig. S`r appref("ch6AppFigGeomorphology")`, S`r appref("ch6AppFigBenthos")`). The 95th percentile highest tide for foraging at the reef crest was approximately 1.5 m, and at the outer reef flat it was around 2.0 m (Fig. S`r appref("ch6AppFigBenthos")`), indicating clear upper tidal limits for habitat use. At 2.0 m tides, during daytime in summer with moon fraction held at 0.5, predicted probability of being on the island was 98.2% (95% CI: 96.3–99.1%) for Heron Island birds and 94.2% (95% CI: 84.3–98.0%) for birds from One Tree Island.
+
+Moon illumination significantly reduced night-time island attendance in Pacific Reef Herons, particularly under low tide conditions (Fig. \@ref(fig:ch6FigTideConstraints)a). For example, during summer nights at 0.5 m tide on Heron Island, the probability of being on-island declined from 89.4% (95% CI: 79.7–94.8%) under new moon to 60.5% (95% CI: 42.2–76.3%) under full moon during summer nights at 0.5 m tide on Heron Island. A similar decline was observed at One Tree Island, where attendance dropped from 96.1% (95% CI: 88.8–98.7%) to 81.6% (95% CI: 59.6–93.0%) across the moonlight gradient. In contrast, during winter nights, birds remained highly island-associated regardless of lunar phase on Heron, attendance ranged from 99.7% (95% CI: 94.8–100%) at new moon to 80.1% (95% CI: 64.5–89.9%) at full moon, and on One Tree from 99.9% (95% CI: 97.9–100%) to 97.1% (95% CI: 88.1–99.3%). Under high tide conditions (\>2.0 m), island attendance remained consistently high across all moon phases and seasons, with all estimates exceeding 98% and lower bounds of all 95% confidence intervals remaining above 95%, indicating that elevated tide height strongly constrained nocturnal departures, regardless of available moonlight. These results suggest that moonlight facilitates nocturnal foraging only when tides are low enough to expose key habitats, but high tides override this effect by limiting habitat accessibility.
+
+During summer daylight hours, the probability of Pacific Reef Herons being on-island increased markedly with tide height. At low tide (0.5 m), birds from Heron Island had a predicted island attendance probability of 2.5% (95% CI: 1.1–5.3%), while birds from One Tree Island had a slightly higher estimate of 6.9% (95% CI: 2.3–18.5%). At high tide (2.0 m), attendance probabilities increased sharply, reaching 98.2% (95% CI: 96.3–99.1%) on Heron Island and 94.2% (95% CI: 84.3–98.0%) on One Tree Island (Fig. \@ref(fig:ch6FigTideConstraints)b). These findings highlight a strong relationship between tidal height and daytime island presence, with herons showing clear retreat to land as rising tides submerge intertidal foraging zones.
+
+```{r ch6FigTideConstraints, fig.width=11, fig.height=11, out.width='100%', fig.cap="Environmental drivers of Pacific Reef Heron (*Egretta sacra*) on-island attendance and foraging access. a) Predicted probability of being on-island across tide heights under varying moon fraction (moon illumination) conditions, and seasons at night. Facets separate combinations of season and moon fraction. b) Island-specific on-island probability predictions in response to tide heights in Pacific Reef Herons from Heron Island (HER) and One Tree Island (OTI) during the summer season, under day conditions and 50% moon illumination. Dotted line (1.5m) represents 95th percentile tide height for access to reef crest foraging areas, dashed line (2m) represents 95th percentile tide height for access to outer reef flat."}
+
+increaseCH6_Fig1 <- 6
+
+readRDS(paste0(thesis_figs, "CH6_Fig1_forageEnvironmentalInteractions.rds")) &
+  theme(
+    axis.text   = element_text(size = 12 + increaseCH6_Fig1),
+    axis.title  = element_text(size = 13 + increaseCH6_Fig1),
+    legend.title = element_text(size = 13 + increaseCH6_Fig1),
+    legend.text = element_text(size = 11 + increaseCH6_Fig1),
+    strip.text  = element_text(size = 12 + increaseCH6_Fig1),
+    plot.title  = element_text(size = 14 + increaseCH6_Fig1),
+    plot.tag    = element_text(size = 14 + increaseCH6_Fig1)
+  )
+```
+
+## Foraging range
+
+Marked sex-specific seasonal shifts in monthly space use (KDE) by Pacific Reef Herons were detected, with males ranging more widely in the early dry season and females later in the year (Fig. \@ref(fig:ch6FigkdeFidelityGAMMs)a). The male early-season peak in mid May is highest at 17.6 km² (95% CI: 10.4–29.7) reducing to 6.25 km² (95% CI: 5.8–15.3) in mid November. Females showed a more gradual increase in foraging area later in the year, peaking at 13.2 km² (95% CI: 8.4–20.9) in September then reducing to 7.72km² (95% CI: 4.8–12.4).
+
+Females had significantly smaller ranges than males from April to June (e.g., May ratio = 0.519, 95% CI: 0.385–0.700, p \< 0.0001), but larger ranges from September to December (e.g., October ratio = 1.89, 95% CI: 1.33–2.70, p = 0.0005). No significant differences were detected in February, March, July, or August (p \> 0.1). We also noted that individuals captured on Heron Island only foraged on Heron and Wistari reefs, and that individuals captured on One Tree Island only foraged on One Tree and Sykes reefs (Fig. S`r appref("ch6AppFigBenthos")`).
+
+## Foraging site fidelity
+
+Marked sex-specific variation in monthly fidelity (Bhattacharyya's affinity index; 0-1) was detected in Pacific Reef Herons, with males showing higher consistency in space use on the reef across seasons than females (Fig. \@ref(fig:ch6FigkdeFidelityGAMMs)c–d). Male fidelity peaked at 0.9 (95% CI: 0.905–0.964) in August when individuals were one month apart, declining to a low of 0.7 (95% CI: 0.600–0.807) at 18 months apart in February. In contrast, females showed more moderate fluctuations, with fidelity estimates ranging from 0.9 (95% CI: 0.818–0.925) at one month apart to a minimum of 0.8 (95% CI: 0.676–0.851) at 18 months apart, with minimal seasonal difference between February and August.
+
+```{r ch6FigkdeFidelityGAMMs, fig.width=9, fig.height=7, out.width='100%', fig.cap="Seasonal foraging range and site fidelity of Pacific Reef Herons (*Egretta sacra*). a) Predicted seasonal changes in 95% kernel density estimate (KDE) area for males and females, reflecting the extent of individual foraging ranges, island locations not included. Estimates are conditional on average daytime tide height. b) Effect of monthly mean daytime tide height on KDE area, with predictions conditioned on female sex and the month of June as reference levels for factor variables. c) Predicted change in site fidelity (Bhattacharyya's Affinity index) with increasing time between monthly observations, by sex. d) Predicted seasonal variation in foraging site fidelity by sex. Shaded ribbons show 95% confidence intervals in all panels."}
+
+kdeSeasonPlot <- readRDS(paste0(thesis_figs, "CH6_Fig2a_kdeSeasonPlot.rds")) +
+  scale_x_continuous(breaks = 1:12, labels = 1:12, name = "Month of the year")
+kdeTidePlot <- readRDS(paste0(thesis_figs, "CH6_Fig2c_kdeTidePlot.rds"))
+fidelitySeasonPlot <- readRDS(paste0(thesis_figs, "CH6_Fig2b_fidelitySeasonPlot.rds")) +
+  scale_x_continuous(breaks = 1:12, labels = 1:12, name = "Month of the year")
+fidelityIntervalPlot <- readRDS(paste0(thesis_figs, "CH6_Fig2d_fidelityIntervalPlot.rds"))
+
+increaseCH6_Fig2 <- 6
+
+(kdeSeasonPlot + fidelitySeasonPlot) / (kdeTidePlot + fidelityIntervalPlot) +
+  plot_layout(tag_level = 'new', guides = 'collect') +
+  plot_annotation(tag_levels = list(c('a', 'c', 'b', 'd'), '1')) &
+  theme(
+    axis.text   = element_text(size = 12 + increaseCH6_Fig2),
+    axis.title  = element_text(size = 13 + increaseCH6_Fig2),
+    legend.title = element_text(size = 13 + increaseCH6_Fig2),
+    legend.text = element_text(size = 11 + increaseCH6_Fig2),
+    strip.text  = element_text(size = 12 + increaseCH6_Fig2),
+    plot.title  = element_text(size = 14 + increaseCH6_Fig2),
+    plot.tag    = element_text(size = 14 + increaseCH6_Fig2)
+  )
+```
+
+Pairwise contrasts confirmed significantly higher fidelity at shorter time lags for both sexes (e.g., male site fidelity at one month vs six month intervals in August: odds ratio = 4.46, p \< 0.001; females site fidelity at one month vs six month intervals in August: odds ratio = 1.86, p \< 0.001), with strongest differences observed between 1–18 month intervals. Seasonal effects were more pronounced in males, with higher fidelity in August than February at most intervals, whereas female patterns were consistent between seasons. Visual inspection of foraging areas did not indicate strict, exclusive territories were maintained by individuals (Fig. S`r appref("ch6AppFigKDEPlots")`).
+
+# Discussion
+
+This study demonstrates that Pacific Reef Herons adjust their movement and space use in response to a complex interplay of tidal, diel, and lunar cues, with clear implications for understanding habitat access in intertidal specialists. Our findings underscore how environmental constraints on physical access to foraging grounds—not just prey abundance—drive fine-scale movement decisions in central-place foragers. These dynamics are especially critical in reef systems, where habitat exposure is highly episodic and non-linearly shaped by tides.
+
+Tide height was the dominant constraint on foraging access. Predictive models showed that when water levels exceeded \~1.5 m, birds consistently remained on colony, regardless of light or time of day. This threshold aligns with physical submersion of reef flats, rendering foraging habitat temporarily inaccessible. Notably, even under favourable moonlight, birds did not leave the colony at high tides, suggesting that physical access, not motivation or detection, is the limiting factor. These findings confirm that for reef-dependent waders, spatial constraints imposed by hydrodynamics can override behavioural flexibility.
+
+When reef flats were exposed, lunar illumination shaped foraging timing, particularly at night. Birds were more likely to access the reef during nocturnal low tides under bright moon conditions—supporting the hypothesis that herons exploit moonlit windows to extend foraging time. Importantly, this lunar effect was not uniform year-round: the influence of moonlight on reef access probability was strongest during summer, when breeding demands are highest and reef productivity peaks. This seasonal amplification suggests a compensatory shift in behaviour, with birds increasingly relying on favourable lunar conditions to meet energetic needs during reproductive investment. In contrast, during cooler months, birds were less responsive to moonlight, potentially reflecting reduced prey detectability or energetic pressure. These findings illustrate not only diel-lunar fine-tuning, but also how its relevance is modulated by seasonal physiological demands and prey landscapes.
+
+Such tidal constraints can limit the fulfilment of energetic demands, especially for diurnal foragers who can utilize only a portion of the tidal cycle [@CalleEtAl2016; @FonsecaEtAl2017]. However, Pacific Reef Herons on remote islands within the Great Barrier Reef Marine Park may represent an extreme case where minimal shoreline is available to forage during tides exceeding 1.5m. Also notable is the strong preference for reef habitats for foraging as supported here as well as by anecdotal evidence that mainland populations will fly offshore to forage on reefs during favourable low tides [@Warham1962]. The importance of these reef flats for foraging is further underscored by the lack of influence from heron colour morph in our models despite previous studies suggesting morph-related habitat use at broader scales [@Itoh1991; @Rohwer1998]. Together, these findings reinforce the need to evaluate both spatial and temporal axes of habitat availability when assessing behavioural flexibility and vulnerability in coastal foragers, particularly those specialised for patchy and environmentally constrained ecosystems like offshore tropical islands and surrounding reefs.
+
+The observed sex-specific pattern in Pacific Reef Herons where males expand their range in winter, females do so in spring, and both sexes contract their range during summer likely reflects a complex interplay between environmental variability, physiological demands, and breeding constraints. In winter, cooler sea temperatures and reduced intertidal productivity may lead to lower prey productivity or availability, prompting males to cover more ground when foraging more widely to maintain energetic balance. In spring, females likely increase their ranging behaviour to meet the elevated energetic demands of egg formation [@Stearns1992; @Abril-ColonEtAl2022; @RuhmannEtAl2019; @BurkeMontevecchi2009]. By summer, tropical intertidal systems typically experience peak productivity [@Alongi1994], allowing both sexes to forage effectively within smaller, more centralised core areas. At the same time, breeding responsibilities particularly chick provisioning further constrain movement, promoting central-place foraging near nests [@OriansPearson1979; @LallaEtAl2022] and potentially increasing territorial behaviour in defence of key foraging patches [@Recher1972; @Ens1990]. Despite this spatial contraction, Pacific Reef Herons were frequently observed foraging at night during the breeding season, even under minimal moonlight. This behaviour suggests a compensatory shift from spatial to temporal flexibility, allowing birds to meet heightened energetic demands by exploiting nocturnal foraging windows possibly at increased predation or navigational risk. Such behavioural plasticity, including shifts in activity timing, could help to buffer energetic shortfalls when spatial flexibility is limited. Seasonal variation in foraging range is well documented in other intertidal species. For example, Eurasian Oystercatchers (Haematopus ostralegus) exhibit small summer ranges near breeding territories but expand them markedly in the non-breeding season to exploit more dispersed prey [@Ens1990]. Sex-specific spatial strategies are also common, with males and females often displaying differing movement patterns depending on their roles or reproductive status [@WeimerskirchEtAl2009; @MilitaoEtAl2023]. Identifying such differences is crucial, as they may result in seasonal- or sex-based disparities in vulnerability to environmental change or human disturbance, with important implications for conservation planning [@KienleEtAl2022].
+
+Our analysis of foraging site fidelity revealed consistent yet sex-specific patterns in how Pacific Reef Herons use space across months. Females maintained higher baseline fidelity to foraging sites, suggesting strong spatial consistency likely linked to reproductive investment and predictable prey access [@AustinEtAl2019; @MilitaoEtAl2023]. However, their fidelity declined more steeply across seasons, indicating greater spatial drift, possibly in response to shifting energetic demands or prey availability during pre-laying and incubation periods [@BurkeMontevecchi2009; @MilitaoEtAl2023]. Males showed lower overall fidelity but a pronounced seasonal cycle, with fidelity peaking in winter and spring before declining in summer. These differences suggest divergent spatial strategies between sexes, likely shaped by energetic and reproductive constraints [@WeimerskirchEtAl2009].
+
+Crucially, the persistently high fidelity observed in both sexes, even during energetically demanding breeding stages, is consistent with reef flat prey resources being sufficiently productive and resilient to support repeated exploitation. We did observe a few antagonistic interactions during foraging times, suggesting that individual herons were willing to defend patches in which they were already foraging. It should be noted, however, that absolute BA values are partly a product of spatial constraint: Heron and Wistari reefs together span approximately 47 km² and One Tree Reef approximately 15 km², meaning the foraging arena is inherently bounded and some degree of site fidelity is structurally expected. The more informative signal lies in the pronounced seasonal and sex-specific variation in both fidelity and range size within these systems. The contraction of ranges in summer, the divergent seasonal cycles between sexes, and the systematic decline in fidelity at longer time lags all indicate that birds make genuine choices about which parts of the reef to exploit, and that these choices shift with season and energetic state rather than simply reflecting saturation of available habitat. The reduced ranging behaviour of males during summer reinforces this, suggesting that local prey availability is adequate to meet energetic demands without necessitating broader search efforts. These findings echo patterns in other shallow-water foragers, where reliable and replenishing prey fields foster site fidelity and minimise foraging effort [@Weimerskirch2007; @HarrisEtAl2020; @ReganEtAl2024]. In tropical systems, benthic productivity and prey access can be seasonally enhanced by elevated temperatures, nutrient inputs, and rapid ecological turnover [@BoldenEtAl2019]. Comparable resilience has been observed in coral reef ecosystems, where high biodiversity and rapid trophic cycling support sustained predator foraging even under fluctuating environmental conditions [@SheppardEtAl2017].
+
+Despite individual fidelity, monthly foraging areas showed considerable spatial overlap among birds, suggesting weak or absent territoriality. While central-place foraging and breeding effort can drive territorial defence [@OriansPearson1979; @Ens1990], the shared use of reef patches likely reflects high prey renewal, broad prey spectra, or low intraspecific competition typical of remote islands [@Recher1972; @MilitaoEtAl2023]. Comparable patterns in waders and seabirds suggest that when prey is abundant and predictably replenished, exclusive territories are unnecessary, even during the breeding season [@Ens1990; @LourencoEtAl2008]. Additionally, the energetic and time costs of territorial defence may simply not outweigh the benefits for birds simultaneously provisioning young and constrained to brief tidal foraging windows [@OriansPearson1979; @Ens1990]. More broadly, territory defence can also become too costly under high competition, when the costs of excluding conspecifics exceed the gains from exclusive resource use, with territorial contest competition giving way to scramble competition as density increases [@PortJohnstone2013; @DeNardoEtAl2025].
+
+These patterns also align with findings from other shallow-water foragers, such as shorebirds, where seasonal shifts in prey behaviour, burying deeper, relocating, or becoming less visible can reduce accessibility without reducing prey abundance [@Goss-CustardEtAl2006]. For visually dependent predators like Reef Herons, even subtle shifts in prey vertical distribution or habitat use (e.g., deeper pools, crevices, or off-reef movements) can substantially affect foraging success. In reef environments, such behavioural dynamics are compounded by seasonal changes in productivity driven by rainfall, temperature, and nutrient input [@Alongi1994]. Moreover, rising sea levels may intensify these constraints by reducing the duration and frequency of reef flat exposure, further limiting opportunities for effective foraging and compounding the challenges posed by naturally variable prey accessibility [@SaintilanEtAl2023; @HamlingtonEtAl2024].
+
+Taken together, these findings are consistent with heron space use reflecting patterns of prey productivity and availability, though direct measurement of prey fields would be required to confirm this inference. Their year-round residency, reef-obligate foraging, and sensitivity to fine-scale tidal and seasonal variation make Pacific Reef Herons plausible candidates as indicators of reef flat dynamics, particularly in remote island contexts where direct prey monitoring is logistically difficult. That said, whether they offer advantages over other reef-associated taxa as indicators, and which monitoring approaches (tracking foraging behaviour, counts, or recruitment indices) would be most cost-effective, remain open questions warranting further investigation.
+
+\newpage
+
+# Supplementary material
+
+Supplementary Figures S1–S3 and Supplementary Tables S1–S2 referenced above (geomorphic habitat use, benthic cover percentiles, monthly KDE plots, tracking summary, and candidate foraging model table) are prepared as separate supplementary files in this folder (`CH5_PRE_SI_Figures.Rmd` and `CH5_PRE_SI_Tables.Rmd`) rather than being duplicated here, consistent with standard journal supplementary-material submission requirements.
+
+# References

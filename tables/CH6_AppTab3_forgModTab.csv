@@ -1,0 +1,21 @@
+Covariates,AIC,AICdelta
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) * season + ns(nearestTide, df = 5) * site + (1 | BandNumber)",19096.67,0
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * site * season + (1 | BandNumber)",19144.56,47.89
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) * season + ns(nearestTide, df = 5) * neapSpring + (1 | BandNumber)",19256.51,159.84
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * site + season + (1 | BandNumber)",19281.28,184.61
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * site + (1 | BandNumber)",19416.9,320.23
+"on_island ~ moonFraction * lightPeriod * moonPhase * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * flatTemp + (1 | BandNumber)",19493.89,397.22
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * sex + (1 | BandNumber)",19513.92,417.25
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * season + (1 | BandNumber)",19524.24,427.57
+"on_island ~ moonFraction * ns(TOD, df = 3) * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * site + (1 | BandNumber)",19536.92,440.25
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + season + (1 | BandNumber)",19573.12,476.44
+"on_island ~ (moon_cos + moon_sin) * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * flatTemp + (1 | BandNumber)",19573.4,476.73
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * flatTemp + (1 | BandNumber)",19610.29,513.62
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + flatTemp + (1 | BandNumber)",19641.68,545.01
+"on_island ~ moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * morph + (1 | BandNumber)",19668.83,572.16
+"on_island ~ lightPeriod * season * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * flatTemp + (1 | BandNumber)",19890.15,793.48
+"on_island ~ sex * moonFraction * lightPeriod * ns(nearestTide, df = 5) + ns(nearestTide, df = 5) * site",20960.16,1863.49
+on_island ~ moonFraction * lightPeriod * tideValueCats + (1 | BandNumber),21093.5,1996.83
+on_island ~ moonFraction * lightPeriod + tideValueCats + (1 | BandNumber),21444.25,2347.58
+on_island ~ moonFraction * lightPeriod + (1 | BandNumber),35967.06,16870.39
+on_island ~ moonFraction * moonPhase + (1 | BandNumber),43446.26,24349.59

@@ -1,0 +1,134 @@
+---
+title: "Supporting Information: Tables"
+output:
+  bookdown::html_document2:
+  number_sections: false
+fig_caption: true
+table_caption: true
+includes:
+  in_header: "../resources/headerSupp.html"
+---
+
+```{r setup, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+
+
+library(readxl)
+library(openxlsx)
+library(tidyverse)
+library(viridis)
+library(raster)
+library(amt)
+library(purrr)
+library(adehabitatHR)
+library(Polychrome)
+library(lubridate)
+library(dataaimsr)
+library(sf)
+library(janitor)
+library(plyr)
+library(skimr)
+library(glmmTMB)
+library(effects)
+library(kableExtra)
+library(patchwork)
+
+gbrFeat<-st_read("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/data/GBR_FEATURES/egFeats.shp", quiet=TRUE)%>%
+  st_transform(4326)
+
+# Ensure local self-contained project folder exists before any local saves below
+dir.create("../../tables", recursive = TRUE, showWarnings = FALSE)
+
+```
+
+```{r indivTable, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', tab.cap="All Eastern Reef Egrets tracked in study and tracking data summaries. Band number pertains to actual banded identification number as issued by Australian Bird and Bat Banding Scheme."}
+
+
+# source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/1.egTracks_HI_Wist.R")
+# source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/2.egTracks_OTI.R")
+
+
+# preDat <- rbind(pre, oti_pre) %>%
+#   dplyr::mutate(BandNumber = as.character(BandNumber)) %>%
+#   dplyr::filter(
+#     x > 151.6, x < 152.3,
+#     y > -23.7, y < -23.3
+#   ) %>%
+#   dplyr::distinct(BandNumber, dateTimeAEST, .keep_all = TRUE) %>%
+#   droplevels() %>%
+#   dplyr::arrange(BandNumber, dateTimeUTC) %>%
+#   dplyr::group_by(BandNumber) %>%
+#   dplyr::mutate(
+#     tDiff = difftime(lead(dateTimeUTC), dateTimeUTC, units = "hours"),
+#     lagdateTimeUTC = lag(dateTimeUTC)
+#   )
+
+# predDatTab<-preDat %>%
+#   group_by(BandNumber) %>%
+#   dplyr::summarise(
+#     fixes_n = n(),
+#     Location = first(LOCBANDED),
+#     Sex = first(SEX),
+#     Morph = first(MORPH),
+#     MinTimeGap = round(min(tDiff, na.rm = TRUE), 2),
+#     MeanTimeGap = round(mean(tDiff, na.rm = TRUE), 2),
+#     MaxTimeGap = round(max(tDiff, na.rm = TRUE), 2)
+#   ) 
+# 
+# saveRDS(predDatTab, "~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/tables/CH6_AppTab1_trackingData.rds")
+
+
+predDatTab<-readRDS( "~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/tables/CH6_AppTab1_trackingData.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# NB: generation code above is commented out, so this mirrors the existing
+# thesis-project table rather than regenerating it.
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(predDatTab, "../../tables/CH6_AppTab1_trackingData.rds")
+  write_csv(predDatTab, "../../tables/CH6_AppTab1_trackingData.csv")
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_AppTab1): ", conditionMessage(e)))
+
+predDatTab%>%
+  kable()
+
+
+```
+
+<!-- ```{r AKDEModTab, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', tab.cap="Candidate models for temporal changes and cycles in 95% AKDE as modelled using a generalised additive mixed model. Results ranked by AIC values."} -->
+
+<!-- AKDEModTab<-readRDS("../../src_outputs/candidateAKDEMods.rds")%>% -->
+
+<!--   mutate(AIC = round(AIC, 2), -->
+
+<!--          AICdelta = round(AICdelta,  2))%>% -->
+
+<!--   remove_rownames() -->
+
+<!-- saveRDS(AKDEModTab, "~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/tables/CH6_AppTab2_akde.rds") -->
+
+<!-- AKDEModTab%>% -->
+
+<!--   kable() -->
+
+<!-- ``` -->
+
+```{r forgModTab, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', tab.cap="All foraging model candidate model terms for predicting the probability that Eastern Reef Egrets would be on the island or reef using a generalised linear mixed model. Results ranked by AIC values."}
+
+forgModTab<-readRDS("../../src_outputs/candidateForgMods.rds")%>%
+  mutate(AIC = round(AIC, 2),
+         AICdelta = round(AICdelta,  2))%>%
+  remove_rownames()
+
+saveRDS(forgModTab, "~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/tables/CH6_AppTab3_forgModTab.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(forgModTab, "../../tables/CH6_AppTab3_forgModTab.rds")
+  write_csv(forgModTab, "../../tables/CH6_AppTab3_forgModTab.csv")
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_AppTab3): ", conditionMessage(e)))
+
+forgModTab%>%
+  kable()
+
+```

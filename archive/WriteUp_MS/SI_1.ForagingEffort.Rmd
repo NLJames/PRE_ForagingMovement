@@ -1,0 +1,202 @@
+---
+citation_package: "natbib"
+bibliography: "../Resources/PRE_bib.bib"
+csl: '/Users/jc754314/Zotero/styles/pnas.csl'
+output:
+  word_document:
+    reference_docx: "../Resources/PNAS_STYLE.docx"
+---
+
+# Supporting information - foraging effort
+
+```{r, setup, results='hide', echo=FALSE, message=FALSE}
+
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+library(gridExtra)
+library(sf)
+
+```
+
+# All locations KDE
+
+```{r echo=FALSE, fig.height=6, fig.width=8, message=FALSE, warning=FALSE, kdeAllLocs, results='hide', paged.print=FALSE, fig.cap = "Figure S1 | Pacific Reef Egret kernel density estimate (KDE) changes per month accounting for sex and morphology for all recorded GPS fixes. A. Monthly male and female KDE values estimated per individual per month. B. Monthly grey and white morph KDE values estimated per individual per month. C. Average KDE for male and females over all months (15/11/2019 to 29/04/2023). E. Approximate seasonal changes in KDE for males and females. D. Average KDE for grey and white morphologies over all months (15/11/2019 to 29/04/2023). F. Approximate seasonal changes in KDE for grey and white morphologies"}
+
+
+monthlyKDE<-readRDS("../../data/DFs/monthlyKDE.rds")
+
+p1<-ggplot() +
+  geom_point(data=monthlyKDE, aes(x=MonYr, y=kde, col=SEX), size=0.7) +
+    geom_smooth(data=monthlyKDE, aes(x=MonYr, y=kde, col=SEX), method="gam", formula = y~s(x), se=F ) +
+  labs(title=("Monthly 95% KDE \nper sex"),
+       x = "Date", y = "KDE (km^2)", col="Sex") +
+  geom_jitter()+
+  theme_classic()
+
+
+p2<-ggplot() +
+  geom_point(data=monthlyKDE, aes(x=SEX, y=kde, col=SEX), position = "jitter", size=0.7) +
+  geom_boxplot(data=monthlyKDE, aes(x=SEX, y=kde), col="black", alpha=0) +
+  labs(title=("Monthly 95% KDE \nper sex"),
+       x = "", y = "KDE (km^2)", col="Sex") +
+  theme_classic()
+
+# We also see there are seasonal peaks during the winter months
+# this is expected as per noddy research which indicates there
+# might be productivity maximums during the summer hence synch breeding
+
+# Morph points
+p4<-ggplot() +
+  geom_point(data=monthlyKDE, aes(x=MonYr, y=kde, col=MORPH), size=0.7) +
+  geom_smooth(data=monthlyKDE, aes(x=MonYr, y=kde, col=MORPH), method="gam", formula = y~s(x), se=F ) +
+  labs(title=("Monthly 95% KDE \nby morphology"),x = "Date",
+        y = "KDE (km^2)", col="Morphology")+
+  theme_classic()
+
+
+# Morph averages
+p6<-ggplot() +
+  geom_point(data=monthlyKDE, aes(x=MORPH, y=kde, col=MORPH), position = "jitter", size=0.7) +
+  geom_boxplot(data=monthlyKDE, aes(x=MORPH, y=kde), col="black", alpha=0) +
+  labs(title=("Monthly 95% KDE \nby morphology"),x = "",
+        y = "KDE (km^2)", col="Morphology") +
+  theme_classic()
+
+fplot<- (p1 + p4) / (p2+p6)  + plot_annotation(tag_levels = 'A')
+
+
+fplot
+```
+
+\newpage
+
+# Reef locations KDE
+
+```{r echo=FALSE, fig.height=6, fig.width=7.3, message=FALSE, warning=FALSE, kdeReefLocs, results='hide', paged.print=FALSE, fig.cap = "Figure S2 | Pacific Reef Egret kernel density estimate (KDE) changes per month accounting for sex and morphology for GPS fixes not on islands. A. Monthly male and female KDE values estimated per individual per month . C. Average KDE for male and females over all months (15/11/2019 to 29/04/2023). E. Approximate seasonal changes in KDE for males and females. B. Monthly grey and white morphology KDE values estimated per individual per month. D. Average KDE for grey and white morphologies over all months (15/11/2019 to 29/04/2023). F. Approximate seasonal changes in KDE for grey and white morphologies"}
+
+
+monthlyReefKDE<-readRDS("../../data/monthlyReefLocsKDE.RDS")
+
+
+p1<-ggplot() +
+  geom_point(data=monthlyReefKDE, aes(x=MonYr, y=kde, col=SEX), size=0.7) +
+    geom_smooth(data=monthlyReefKDE, aes(x=MonYr, y=kde, col=SEX), method="gam", formula = y~s(x), se=F ) +
+  labs(title=("Monthly 95% KDE \nper sex"),
+       x = "Date", y = "KDE (km^2)", col="Sex") +
+  geom_jitter()+
+  theme_classic()
+
+
+p2<-ggplot() +
+  geom_point(data=monthlyReefKDE, aes(x=SEX, y=kde, col=SEX), position = "jitter", size=0.7) +
+  geom_boxplot(data=monthlyReefKDE, aes(x=SEX, y=kde), col="black", alpha=0) +
+  labs(title=("Monthly 95% KDE \nper sex"),
+       x = "", y = "KDE (km^2)", col="Sex") +
+  theme_classic()
+
+# We also see there are seasonal peaks during the winter months
+# this is expected as per noddy research which indicates there
+# might be productivity maximums during the summer hence synch breeding
+
+# Morph points
+p3<-ggplot() +
+  geom_point(data=monthlyReefKDE, aes(x=MonYr, y=kde, col=MORPH), size=0.7) +
+  geom_smooth(data=monthlyReefKDE, aes(x=MonYr, y=kde, col=MORPH), method="gam", formula = y~s(x), se=F ) +
+  labs(title=("Monthly 95% KDE \nby morphology"),x = "Date",
+        y = "KDE (km^2)", col="Morphology")+
+  theme_classic()
+
+
+# Morph averages
+p4<-ggplot() +
+  geom_point(data=monthlyReefKDE, aes(x=MORPH, y=kde, col=MORPH), position = "jitter", size=0.7) +
+  geom_boxplot(data=monthlyReefKDE, aes(x=MORPH, y=kde), col="black", alpha=0) +
+  labs(title=("Monthly 95% KDE \nby morphology"),x = "",
+        y = "KDE (km^2)", col="Morphology") +
+  theme_classic()
+
+fplot<- (p1 + p3) / (p2+p4)  + plot_annotation(tag_levels = 'A')
+
+
+fplot
+```
+
+\newpage
+
+# Other foraging estiamtes
+
+```{r echo=FALSE, fig.height=9.7, fig.width=8.3, message=FALSE, warning=FALSE, timeForg, results='hide', paged.print=FALSE, fig.cap = "Foraging behaviour of Pacific Reef Egrets in the Southern Great Barrier Reef. A. Percentage of time spent on islands and reef habitats by sex. B. Distance from Heron Island (colony) by sex. C. Standard deviation of distance from Heron Island per sex. D. Distance from Heron Island (colony) by colour morphology E. Standard deviation of distance from Heron Island per colour morphology."}
+
+
+ptpct<-readRDS("../../data/DFs/islandPct.rds")
+
+
+p1<-ggplot(ptpct, aes(x=FEAT_NAME, y=pct, fill=SEX))+
+  geom_boxplot()+
+  geom_point(position='jitter')+
+  labs(title="Percentage time spent on island Vs Reef per sex",
+       y="Percentage of time", x="Location", fill="Sex")+
+  theme_classic()+
+    geom_jitter()
+
+
+# What about distance to the colony?
+# BAM. Ladies are generally having to forage further away from the island
+# which is increasing their foraging KDEs AND they are more consistent in the
+# distances that they forage from the island
+
+dist<-readRDS("../../data/DFs/distPRE.rds")
+
+p2<-ggplot(data=dist, aes(x=SEX, y=mean, col=SEX))+
+  geom_boxplot()+
+  geom_point()+
+  labs(title="Distance from Heron Island per sex", y="Distance (km)",x = "",
+       col="Sex") +
+  theme_classic()+
+    geom_jitter()
+
+p3<-ggplot(data=dist, aes(x=SEX, y=sd, col=SEX))+
+  geom_boxplot()+
+    geom_point()+
+  labs(title="Standard deviation in distance \nfrom Heron Island per sex", x = "",
+       y="SD", col="Sex")+
+  theme_classic()+
+    geom_jitter()
+
+# per morph
+distm<-readRDS("../../data/DFs/distMorph.rds")
+
+
+p4<-ggplot(data=distm, aes(x=MORPH, y=mean, col=MORPH))+
+  geom_point()+
+    geom_boxplot()+
+  labs(title="Distance from Heron Island \nby morphology", x = "",
+       y="Distance (km)", col="Morphology")+
+  theme_classic()+
+    geom_jitter()
+
+p5<-ggplot(data=distm, aes(x=MORPH, y=sd , col=MORPH))+
+  geom_boxplot()+
+  labs(title="Standard deviation in distance \nfrom Heron Island by morphology", x = "",
+       y="SD", col="Morphology")+
+  theme_classic()+
+    geom_jitter()
+
+
+fplot<-(p1) / (p2+p3) / (p4+p5) + plot_annotation(tag_levels = 'A')
+
+
+fplot
+
+```
+
+
+
+
+# References
+
+::: {#refs}
+:::
+
+\newpage

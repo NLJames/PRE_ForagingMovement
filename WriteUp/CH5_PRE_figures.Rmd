@@ -1,0 +1,98 @@
+---
+title: "Figures"
+output: 
+  bookdown::html_document2:
+    number_sections: false
+---
+
+```{r setupFigs, include=FALSE}
+library(tidyverse)
+library(momentuHMM)
+library(patchwork)
+library(kableExtra)
+library(ggforce)
+library(wesanderson)
+library(glmmTMB)
+library(splines)
+
+knitr::opts_chunk$set(echo = FALSE)
+
+colPal = wes_palette("Zissou1",n=5)
+
+```
+
+```{r forgMod, message=FALSE,echo=FALSE,error=FALSE,warning=FALSE}
+
+#source("./src/12.ForagingModel.R")
+
+forgModFinal<-readRDS(file = "../src_outputs/bestForgMod.rds")
+
+
+
+# ---- 1. Four-way interaction grid: moon × light × tide × season ----
+grid_4way <- expand.grid(
+  nearestTide = seq(0,3.6,length.out = 100),
+  moonFraction = c(0, 0.25, 0.5, 0.75, 1),
+  lightPeriod = levels(forgModFinal$frame$lightPeriod),
+  season = levels(forgModFinal$frame$season)
+) %>%
+  mutate(
+    LOCBANDED = factor("HER", levels = levels(forgModFinal$frame$LOCBANDED)),
+    BandNumber = NA
+  )
+
+grid_4way$pred <- predict(forgModFinal, newdata = grid_4way, type = "response", re.form = NA)
+
+grid_4way$season<-factor(grid_4way$season, levels = c( "Autumn", "Winter", "Spring", "Summer"))
+
+p1 <- ggplot(grid_4way, aes(x = nearestTide, y = pred, color = factor(moonFraction))) +
+  geom_line(size = 1) +
+  scale_colour_manual(values=colPal)+
+  facet_grid(season ~ lightPeriod) +
+  labs(
+    x = "Tide Height (m)",
+    y = "P(onColony)",
+    color = "Moon Fraction",
+    title = "Effect of Moon, Light, Tide, and Season on On-Colony Probability"
+  ) +
+  theme_minimal(base_size = 13)+
+  xlim(c(0,3))
+
+# ---- 2. Tide × Colony interaction grid ----
+grid_colony <- expand.grid(
+  nearestTide = seq(0,3.6,length.out = 100),
+  LOCBANDED = levels(forgModFinal$frame$LOCBANDED)
+) %>%
+  mutate(
+    moonFraction = 0.5,
+    lightPeriod = factor("Dark", levels = levels(forgModFinal$frame$lightPeriod)),
+    season = factor("Summer", levels = levels(forgModFinal$frame$season)),
+    BandNumber = NA
+  )
+
+grid_colony$pred <- predict(forgModFinal, newdata = grid_colony, type = "response", re.form = NA)
+
+p2 <- ggplot(grid_colony, aes(x = nearestTide, y = pred, color = LOCBANDED)) +
+  geom_line(size = 1.2) +
+  scale_colour_manual(values=colPal[c(1,3)])+
+  labs(
+    x = "Tide Height (m)",
+    y = "P(onColony)",
+    color = "Colony",
+    title = "Colony-Specific Tide Response (Summer, Dark, MoonFraction = 0.5)"
+  ) +
+  theme_minimal(base_size = 13)
+
+# Print both plots
+p1
+
+p2
+
+
+
+
+
+
+
+
+```

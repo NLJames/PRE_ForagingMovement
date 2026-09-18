@@ -1,0 +1,52 @@
+---
+title: "Space use - Egrets"
+output: html_document
+date: "2025-06-08"
+---
+
+```{r}
+
+library(dplyr)
+indiv_summary <- sfdf_model %>%
+  group_by(BandNumber) %>%
+  summarise(mean_overlap = mean(overlap_adj),
+            sd_overlap = sd(overlap_adj))  # if area is available
+
+# Cluster
+kmeans_out <- kmeans(scale(indiv_summary[, -1]), centers = 2)
+indiv_summary$cluster <- factor(kmeans_out$cluster)
+
+# Join back
+sfdf_model <- sfdf_model %>%
+  left_join(indiv_summary %>% select(BandNumber, cluster), by = "BandNumber")
+
+distinct(sfdf_model, BandNumber, SEX,   cluster)
+
+library(ggplot2)
+
+ggplot(sfdf_model, aes(x = month_cycle, y = overlap_adj, colour = cluster)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "gam", formula = y ~ s(x, bs = "cc", k = 12)) +
+  facet_wrap(~ cluster) +
+  labs(x = "Month", y = "Adjusted Overlap", title = "Seasonal overlap by Fidelity Cluster") +
+  theme_minimal()
+
+```
+we want:
+
+- AKDE plot
+- Overlap fidelity plot
+- Overlap territory plot
+
+
+
+
+
+GAMM model returned some evidence that overlap reduced between seasons but not conclusive. Regardless, overall overlap remains high (~50%) so does not appear to be an exclusive territory maintained strictly.
+
+```{r}
+#source("../src/territoryOverlap.R")
+
+readRDS("../src_outputs/territoryOverlap_GAMMplot.rds")+
+  labs(colour="Location", fill="Location")
+```

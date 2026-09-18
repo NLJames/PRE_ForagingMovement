@@ -1,0 +1,40 @@
+# --- R / RStudio ---
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.httr-oauth
+.Renviron
+*.Rcheck/
+
+# --- macOS ---
+.DS_Store
+
+# --- Knitted / rendered document output ---
+# (regenerate from .Rmd/.qmd source; comment out any of these if you want
+# a rendered copy tracked, e.g. the submission docx)
+*.html
+*_files/
+*_cache/
+/WriteUp/MS/*.docx
+/WriteUp/**/*.docx
+!/WriteUp/resources/*.docx
+/archive/**/*.docx
+
+# --- Large / regenerable data ---
+# Raw and reference data are large (GIS layers, ARGOS tracks, DEMs, imagery)
+# and are better hosted externally (e.g. Dryad/Zenodo) with a data
+# availability statement, rather than committed to git. Comment out any
+# lines below to track a specific subfolder instead.
+/data/
+/src_outputs/
+/kde_results/
+/kde_monthly.gif
+/test.gif
+/WriteUp/MS/*.gif
+/figures/*.rds
+/tables/*.rds
+
+# --- Logs / temp ---
+*.log
+.fuse_hidden*

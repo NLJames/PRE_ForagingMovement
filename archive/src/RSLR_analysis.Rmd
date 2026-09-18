@@ -1,0 +1,318 @@
+---
+title: "Sea-Level Rise and Reef Foraging Accessibility"
+date: "`r Sys.Date()`"
+output:
+  bookdown::html_document2:
+    theme: readable
+    highlight: tango
+    fig_caption: true
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+### Methods {.unnumbered}
+
+To assess the potential impacts of sea-level rise (SLR) on reef flat
+accessibility at Heron Island, we modelled both absolute and relative
+sea-level rise (RSLR) trajectories under different global warming
+scenarios and estimated changes in the frequency of high tides exceeding
+a biologically relevant threshold (1.5 m). Tide Data
+
+Hourly tide predictions for Heron Island and One Tree Island were
+obtained from the Bureau of Meteorology (BoM). Predictions labelled as
+"Prediction" were excluded to retain only observational-quality data.
+
+### Sea-Level Rise Scenarios {.unnumbered}
+
+SLR projections were developed for five IPCC-consistent warming
+scenarios (1.5°C, 2.0°C, 3.0°C, 4.0°C, and 5.0°C; Saintilan et al. 2023;
+Hamilton et al. 2024). For each scenario, we specified start and end SLR
+rates (mm/yr) over the 76-year period from 2024 to 2100 and assumed a
+linear acceleration. From these, annual SLR rates and cumulative SLR
+were calculated using a custom function that simulates a gradual
+increase from an initial rate of 3.5 mm/yr to the scenario-specific
+target.
+
+Each scenario included a central estimate (average rate), as well as
+upper and lower bounds representing uncertainty in the acceleration
+rate. Cumulative SLR was calculated by summing annual SLR rates and
+converting to metres.
+
+### Relative Sea-Level Rise (RSLR) {.unnumbered}
+
+To account for reef accretion, we subtracted estimated vertical
+accretion from each year’s cumulative SLR. Accretion was modelled as a
+constant rate between 1.2 mm/yr (low) and 4.0 mm/yr (high). This yielded
+minimum, average, and maximum estimates of RSLR for each year and
+scenario. All RSLR values were truncated at zero to prevent negative
+values (i.e., where accretion exceeds SLR).
+
+We assessed changes in tide accessibility by adding the projected RSLR
+values to each tide in the Heron Island record and calculating the
+proportion of tides that exceeded 1.5 m in height for each year and
+scenario. This threshold was selected based on prior field observations
+of reef flat submersion relevant to foraging activity.
+
+To quantify accessibility impacts for reef foragers, we assessed how the
+proportion of high tides exceeding 1.5 m changes under each RSLR
+trajectory. For each year tt, we computed:
+
+$$
+RSLR(t)=max(SLR(t)−A⋅(t−2024), 0)
+$$
+
+Where:
+
+$h_i$​ is the $i$-th Heron Island tide height (in metres),
+
+$RSLRm(t)$ is the cumulative relative sea-level rise for year $t$ (in
+metres),
+
+$I(⋅)$ is an indicator function: it returns 1 if the condition is true
+and 0 otherwise,
+
+$n$ is the total number of tide predictions used.
+
+This approach assumes the full tide record (e.g., a representative year)
+remains stationary apart from the RSLR offset. The result is a
+scenario-specific time series of reef accessibility loss, shown as the
+proportion of tides that would exceed the 1.5 m threshold after
+accounting for sea-level rise.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(patchwork)
+fHI <- read.csv("../data/BOM_TIDE/tides_HI.csv")
+names(fHI) <- c("dateTime", "heronTide")
+
+fOTI <- read.csv("../data/BOM_TIDE/tides_OTI.csv")
+names(fOTI) <- c("dateTime", "OneTreeTide")
+
+tides <- left_join(fHI, fOTI) %>%
+  filter(heronTide != "Prediction")%>%
+  mutate(
+    dateTime = ymd_hms(dateTime),
+    year = year(dateTime)
+  )
+
+
+
+```
+
+<br><br><br>
+
+Table 1. Projected sea-level rise rates under five global warming
+scenarios (1.5 °C to 5.0 °C) as presented in Saintilan et al. (2023).
+Start rates are fixed at 3.5 mm/yr, and end rates vary by scenario.
+These values were used to derive linear acceleration rates applied in
+cumulative sea-level rise projections.
+
+| Scenario | Start Rate (mm/yr) | End Rate by 2100 (mm/yr) | Years (2024–2100) | Acceleration (mm/yr²) |
+|----------|--------------------|--------------------------|-------------------|-----------------------|
+| 1.5 °C   | 3.5                | 4.0                      | 76                | 0.0066                |
+| 2.0 °C   | 3.5                | 6.0                      | 76                | 0.0329                |
+| 3.0 °C   | 3.5                | 9.0                      | 76                | 0.0724                |
+| 4.0 °C   | 3.5                | 11.0                     | 76                | 0.0987                |
+| 5.0 °C   | 3.5                | 13.0                     | 76                | 0.1250                |
+
+```{r message=FALSE, warning=FALSE, echo=FALSE,fig.height=8, out.width='100%', fig.cap="Projected cumulative absolute sea-level rise from 2024 to 2100 under five global warming scenarios. Coloured lines represent the central estimate for each scenardio, while shaded ribbons denote uncertainty bounds based on minimum and maximum projected rates. Sea-level rise is modelled as a linear acceleration from a starting rate of 3.5 mm/yr to the end-of-century rate for each scenario."}
+# Load packages
+library(dplyr)
+library(tibble)
+library(ggplot2)
+
+# Step 1: Define warming scenarios
+scenarios <- tibble(
+  scenario = c("1.5°C", "2.0°C", "3.0°C", "4.0°C", "5.0°C"),
+  rslr_avg = c(4.0, 6.0, 9.0, 11.0, 13.0),
+  rslr_min = c(3.0, 5.0, 8.0, 10.0, 12.0),
+  rslr_max = c(5.0, 7.0, 10.0, 12.0, 14.0)
+)
+
+# Step 2: Function for accelerating SLR
+generate_accel_rslr <- function(start_rate, target_rate, years) {
+  n <- length(years)
+  total_rise <- target_rate * n
+  end_rate <- 2 * total_rise / n - start_rate
+  rates <- seq(start_rate, end_rate, length.out = n)
+  cumulative <- cumsum(rates) / 1000  # mm to m
+  tibble(Year = years, SLR_mm_yr = rates, Cumulative_SLR_m = cumulative)
+}
+
+# Step 3: Generate SLR trajectories
+years <- 2024:2100
+
+slr_data <- scenarios %>%
+  rowwise() %>%
+  do({
+    scenario_label <- paste0(.$scenario, " (", .$rslr_avg, " mm/yr)")
+    df_mean <- generate_accel_rslr(3.5, .$rslr_avg, years)
+    df_min  <- generate_accel_rslr(3.5, .$rslr_min, years)
+    df_max  <- generate_accel_rslr(3.5, .$rslr_max, years)
+
+    df_mean %>%
+      mutate(
+        scenario = .$scenario,
+        label = scenario_label,
+        Cumulative_SLR_min = df_min$Cumulative_SLR_m,
+        Cumulative_SLR_max = df_max$Cumulative_SLR_m
+      )
+  }) %>%
+  ungroup()
+
+# Step 4: Plot Cumulative SLR with uncertainty
+p1 <- ggplot(slr_data, aes(x = Year, y = Cumulative_SLR_m, colour = label, fill = label)) +
+  geom_ribbon(aes(ymin = Cumulative_SLR_min, ymax = Cumulative_SLR_max), alpha = 0.2, colour = NA) +
+  geom_line(linewidth = 1.2) +
+  labs(
+    title = "Projected Cumulative Sea-Level Rise (Absolute)",
+    y = "Cumulative SLR (m)",
+    x = "Year",
+    colour = "Warming Scenario",
+    fill = "Warming Scenario"
+  ) +
+  scale_colour_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_minimal(base_size = 12)
+
+# Step 5: Estimate RSLR by subtracting accretion (with uncertainty)
+accretion_min <- 1.2  # mm/yr
+accretion_max <- 4.0  # mm/yr
+
+rslr_data <- slr_data %>%
+  mutate(
+    RSLR_mean = pmax((Cumulative_SLR_m * 1000 - accretion_max * (Year - 2024)), 0) / 1000,
+    RSLR_min = pmax((Cumulative_SLR_min * 1000 - accretion_max * (Year - 2024)), 0) / 1000,
+    RSLR_max = pmax((Cumulative_SLR_max * 1000 - accretion_min * (Year - 2024)), 0) / 1000
+  )
+
+# Step 6: Plot Cumulative RSLR with uncertainty
+p2 <- ggplot(rslr_data, aes(x = Year, y = RSLR_mean, colour = label, fill = label)) +
+  geom_ribbon(aes(ymin = RSLR_min, ymax = RSLR_max), alpha = 0.2, colour = NA) +
+  geom_line(linewidth = 1.2) +
+  labs(
+    title = "Cumulative Relative Sea-Level Rise (RSLR)",
+    y = "Cumulative RSLR (m)",
+    x = "Year",
+    colour = "Warming Scenario",
+    fill = "Warming Scenario"
+  ) +
+  scale_colour_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_minimal(base_size = 12)
+
+# Step 7: Display plot
+p1
+
+
+
+```
+
+```{r message=FALSE, warning=FALSE, echo=FALSE,fig.height=8, out.width='100%', fig.cap="Projected cumulative relative sea-level rise (RSLR) from 2024 to 2100, accounting for vertical reef accretion. Estimates assume accretion rates between 1.2 mm/yr (low) and 4.0 mm/yr (high). Values represent the net sea-level rise relative to reef surfaces, highlighting increasing exposure risk where accretion is insufficient to offset rising seas."}
+
+p2
+
+```
+
+### Reef Flat Inundation: Tides Exceeding 1.5m {.unnumbered}
+
+To evaluate how sea-level rise alters foraging habitat availability, we
+computed the proportion of tide heights that exceed a biologically
+relevant threshold (1.5 m) under each RSLR scenario. For each year tt:
+$$
+P(t)=1\n \sum_{i=1}^{n} x_i I(h_i​+​RSLRm​(t)>1.5)
+$$
+
+Where:
+
+$hi$ is the ii-th tide height at Heron Island (metres),
+
+$RSLRm(t)$ is the relative sea-level rise in metres for year tt,
+
+$I(⋅)$ is an indicator function that equals 1 if the condition is true,
+0 otherwise,
+
+$n$ is the number of tide records.
+
+This yields a year-by-year estimate of the proportion of tides exceeding
+the 1.5 m threshold, reflecting declining reef flat exposure over time.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE,  fig.cap="Proportion of daily tide heights at Heron Island that exceed 1.5 m, adjusted for projected RSLR from 2024 to 2100. Right-side annotations show the percentage increase in high tides for each warming scenario.", message=FALSE, warning=FALSE, echo=FALSE}
+
+# Define scenarios and cumulative RSLR over years (2024–2100)
+years <- 2024:2100
+n_years <- length(years)
+
+cumulative_rslr <- tibble(
+  Year = rep(years, times = 5),
+  Scenario = rep(c("1.5°C", "2.0°C", "3.0°C", "4.0°C", "5.0°C"), each = n_years),
+  Cumulative_RSLR_m = c(
+    seq(0, 0.4, length.out = n_years),  # 1.5°C
+    seq(0, 0.6, length.out = n_years),  # 2.0°C
+    seq(0, 0.9, length.out = n_years),  # 3.0°C
+    seq(0, 1.1, length.out = n_years),  # 4.0°C
+    seq(0, 1.3, length.out = n_years)   # 5.0°C
+  )
+)
+
+# Calculate proportion of tides > 1.5 m
+proportion_df <- cumulative_rslr %>%
+  rowwise() %>%
+  mutate(
+    ProportionAbove1.5m = mean((fHI$heronTide + Cumulative_RSLR_m) > 1.5)
+  ) %>%
+  ungroup()
+
+# Extract start and end proportions by scenario
+change_labels <- proportion_df %>%
+  group_by(Scenario) %>%
+  summarise(
+    start = first(ProportionAbove1.5m),
+    end = last(ProportionAbove1.5m),
+    change_pct = round(100 * (end - start) / start, 0),
+    y_pos = end
+  )
+
+# Plot
+ggplot(proportion_df, aes(x = Year, y = ProportionAbove1.5m, colour = Scenario)) +
+  geom_line(linewidth = 1.2) +
+  geom_segment(
+    data = change_labels,
+    aes(
+      x = 2100 + 1, xend = 2100 + 1,
+      y = start, yend = y_pos, colour = Scenario
+    ),
+    linetype = "dotted", linewidth = 0.8, inherit.aes = FALSE
+  ) +
+  geom_text(
+    data = change_labels,
+    aes(x = 2101.5, y = y_pos,
+        label = paste0("-", change_pct, "%")),
+    hjust = 0, size = 3.5, inherit.aes = FALSE
+  ) +
+  labs(
+    title = "Proportion of Heron Island Tides > 1.5m Under RSLR Scenarios",
+    x = "Year",
+    y = "Proportion of Tides > 1.5m",
+    colour = "Warming Scenario"
+  ) +
+  scale_x_continuous(limits = c(2024, 2108)) +
+  theme_minimal(base_size = 12) +
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5))  # extra right margin
+
+```
+
+### References {.unnumbered}
+
+Hamlington, B.D., Bellas-Manley, A., Willis, J.K. *et al.* The rate of
+global sea level rise doubled during the past three decades. *Commun
+Earth Environ* **5**, 601 (2024).
+<https://doi.org/10.1038/s43247-024-01761-5>
+
+Saintilan, N., Horton, B., Törnqvist, T.E. *et al.* Widespread retreat
+of coastal habitat is likely at warming levels above 1.5 °C.*Nature*
+**621**, 112–119 (2023). <https://doi.org/10.1038/s41586-023-06448-z>

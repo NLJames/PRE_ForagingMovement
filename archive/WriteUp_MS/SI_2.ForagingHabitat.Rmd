@@ -1,0 +1,366 @@
+---
+citation_package: "natbib"
+bibliography: "../Resources/PRE_bib.bib"
+csl: '/Users/jc754314/Zotero/styles/pnas.csl'
+output:
+  word_document:
+    reference_docx: "../Resources/PNAS_STYLE.docx"
+---
+
+# Supporting information - foraging habitat
+
+```{r, setup, results='hide', echo=FALSE, message=FALSE}
+
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+library(gridExtra)
+library(sf)
+
+```
+
+# Tides
+
+```{r echo=FALSE, fig.height=9.7, fig.width=8.3, message=FALSE, warning=FALSE, tides, results='hide', paged.print=FALSE, fig.cap = "Figure S1 | Pacific Reef Egret Responses to changes in tide height and turbidity using location not on islands. A. Water depth at location with increasing tide heights. B. "}
+
+# make all values in cm
+tidepts<-readRDS("../../data/DFs/tidesFinal.rds")%>%
+  mutate(HeronTide = HeronTide*100,
+         DARK = ifelse(DARK==1, "Night", "Day"))%>%
+  filter(DEPTHACA<300)
+
+
+
+p1<- ggplot() +
+  geom_point(data=tidepts, aes(x=HeronTide, y=DEPTHACA), col='black', size=0.3, alpha=0.5) +
+  geom_smooth(data=tidepts, aes(x=HeronTide, y=DEPTHACA), col='lightblue')+
+  theme_classic()+
+  labs(y="Depth (cm)")
+
+p2<-ggplot() +
+  geom_boxplot(data=tidepts, aes(y=DEPTHACA, x=as.factor(DARK)), col='black')+
+  theme_classic()+
+  labs(y="Depth (cm)", x="Time of day")
+
+p3<-ggplot(tidepts, aes(x=SEX, y=DEPTHACA, col=SEX)) +
+  geom_boxplot()+
+  theme_classic()+
+  labs(y="Depth (cm)", x="Sex")+
+  theme(legend.position = "none") 
+
+p4<-ggplot(tidepts, aes(x=MORPH, y=DEPTHACA, col=MORPH)) +
+  geom_boxplot()+
+  theme_classic()+
+  labs(y="Depth (cm)", col="Morphology", x="Morphology")+
+  theme(legend.position = "none") 
+
+
+
+# This is with Depth max 200 
+dd1<-readRDS("../../data/DFs/depthTurb.rds")
+
+#max(dd1$DEPTHACA)
+
+p5<-ggplot(dd1, aes(y=DEPTHACA, x=SEASON, group=SEASON, col=SEASON))+
+  geom_boxplot()+
+  labs(title = "Foraging depth per season", y="Depth (cm)", x="Season")+
+  theme_classic()+ 
+  theme(legend.position = "none")   
+
+# Turbidity VS depth. After 7.5 TFNU birds seem to seek out
+# deeper water
+p6<-ggplot(dd1, aes(y=DEPTHACA, x=TurFNU))+
+  geom_point(size=0.3)+
+  geom_smooth()+
+  labs(title = "Foraging depth under \nincreasing turbidity", y="Depth (cm)",
+       x="Turbidity (FNU)") +
+  theme_classic()
+
+# Difference between tide and depth increases
+p7<-ggplot(dd1, aes(y=WLEVEL, x=TurFNU))+
+  geom_point(size=0.3)+
+  geom_smooth()+
+  labs(title = "Water level selected under \nincreasing turbidity",y="Water level (cm)",
+       x="Turbidity (FNU)") +
+  theme_classic()
+
+p8<-ggplot(dd1%>%filter(!is.na(TurbCAT)), aes(y=WLEVEL, x=TurbCAT, group=TurbCAT, col=TurbCAT))+
+  geom_boxplot()+
+  labs(title = "Water level selected under \nincreasing turbidity",y="Water level (cm)",
+       x="Turbidity Category (FNU)") +
+  theme_classic()+
+  theme(legend.position = "none") 
+
+
+fplot<-(p1 + p2) / (p3+p4)/ (p5+p6)/ (p8+p7) + plot_annotation(tag_levels = 'A')
+
+
+fplot
+```
+
+
+# Benthic habitat selection
+
+```{r echo=FALSE, fig.height=7, fig.width=8.3, message=FALSE, warning=FALSE, benthic, results='hide', paged.print=FALSE, fig.cap = "Figure S2 | Pacific Reef Egret foraging habitat type selection using locations not on islands. A. "}
+
+geodat<-readRDS("../../data/DFs/benthosFinal.rds")%>%
+  filter(!is.na(BENTHIC), !is.na(GEOMORPHIC))%>%
+  mutate(HeronTide = HeronTide*100,
+         WLEVEL=(HeronTide+DEPTHACA))
+
+sgeo<-geodat%>%
+  group_by(SEX,BENTHIC)%>%
+  tally%>%
+  ungroup
+
+p1<-ggplot()+
+  geom_bar(data=sgeo, aes(x=BENTHIC, y=n, fill=SEX),stat="identity", position="dodge")+
+  theme_classic()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(fill="Sex", x="Benthic habitat type", y="Number of observations (GPS points)")
+
+mgeo<-geodat%>%
+  group_by(MORPH,BENTHIC)%>%
+  tally%>%
+  ungroup
+
+p2<-ggplot()+
+  geom_bar(data=mgeo, aes(x=BENTHIC, y=n, fill=MORPH),stat="identity", position="dodge")+
+  theme_classic()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(fill="Morphology", x="Benthic habitat type", y="Number of observations (GPS points)")
+
+p3<-ggplot(data=geodat, aes(x=BENTHIC, y=WLEVEL))+
+  geom_boxplot()+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(y="Water level (cm)", x="Benthic habitat type")
+
+
+kdedf<-readRDS("../../data/DFs/kdedf.rds")
+
+
+p4<-kdedf%>%
+  filter(name=="BENTHIC_CORAL_ALGAE")%>%
+ggplot()+
+  geom_smooth( aes(x=KDE, y=value), method='lm')+
+  geom_point(aes(x=KDE, y=value))+
+  theme_classic()+
+  labs(x="Area of 95% KDE (km^2)", y="Number of observations (GPS points)\non coral/algae habitat")
+
+fplot<-(p1 + p2) / (p3+ p4)+ plot_annotation(tag_levels = 'A')
+fplot
+
+
+```
+
+
+# Geomorphic habitat selection
+
+```{r echo=FALSE, fig.height=9.7, fig.width=8.3, message=FALSE, warning=FALSE, geomorphic, results='hide', paged.print=FALSE, fig.cap = "Figure S3 | Pacific Reef Egret foraging habitat type selection using locations not on islands. A. "}
+
+geodat<-readRDS("../../data/DFs/benthosFinal.rds")%>%
+  filter(!is.na(BENTHIC), !is.na(GEOMORPHIC))%>%
+  mutate(HeronTide = HeronTide*100,
+         WLEVEL=(HeronTide+DEPTHACA))
+
+sgeo<-geodat%>%
+  group_by(SEX,GEOMORPHIC)%>%
+  tally%>%
+  ungroup
+
+p1<-ggplot()+
+  geom_bar(data=sgeo, aes(x=GEOMORPHIC, y=n, fill=SEX),stat="identity", position="dodge")+
+  theme_classic()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(fill="Sex", x="Geomorphic habitat type", y="Number of observations (GPS points)")
+
+mgeo<-geodat%>%
+  group_by(MORPH,GEOMORPHIC)%>%
+  tally%>%
+  ungroup
+
+p2<-ggplot()+
+  geom_bar(data=mgeo, aes(x=GEOMORPHIC, y=n, fill=MORPH),stat="identity", position="dodge")+
+  theme_classic()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(fill="Morphology", x="Geomorphic habitat type", y="Number of observations (GPS points)")
+
+p3<-ggplot(data=geodat, aes(x=GEOMORPHIC, y=WLEVEL))+
+  geom_boxplot()+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  labs(y="Water level (cm)", x="Geomorphic habitat type")
+
+
+kdedf<-readRDS("../../data/DFs/kdedf.rds")
+
+
+p4<-kdedf%>%
+  filter(name=="GEOMORPHIC_REEF_CREST")%>%
+ggplot()+
+  geom_smooth( aes(x=KDE, y=value), method='lm')+
+  geom_point(aes(x=KDE, y=value))+
+  theme_classic()+
+  labs(x="Area of 95% KDE (km^2)", y="Number of observations (GPS points)\non reef crest habitat")
+
+fplot<-(p1 + p2) / (p3+ p4)+ plot_annotation(tag_levels = 'A')
+fplot
+```
+
+
+```{r echo=FALSE, fig.height=9.7, fig.width=8.3, message=FALSE, warning=FALSE, geobenth, results='hide', paged.print=FALSE, fig.cap = "Figure S4 | Combined selection of benthis habitat types within geomorphic classes"}
+
+geodat<-readRDS("../../data/DFs/benthosFinal.rds")%>%
+  filter(!is.na(BENTHIC), !is.na(GEOMORPHIC))%>%
+  mutate(HeronTide = HeronTide*100,
+         WLEVEL=(HeronTide+DEPTHACA))
+
+
+p2<-ggplot(data=geodat, aes(y=WLEVEL, x=GEOMORPHIC, fill=BENTHIC))+
+  geom_boxplot()+
+  labs(y="Water level (cm)", fill= "Benthic habitat type")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+
+GBM<-geodat%>%
+  group_by(GEOMORPHIC, BENTHIC,  MORPH)%>%
+  dplyr::summarise(count=as.numeric(n()))%>%
+  filter(!is.na(GEOMORPHIC), !is.na(BENTHIC))%>%
+  ungroup
+
+p3<-ggplot(data=GBM, aes(fill=BENTHIC, y=count, x=GEOMORPHIC))+
+  geom_bar(position="stack", stat="identity")+
+  facet_grid(~MORPH)+
+  labs(y="Number of observations (GPS points)\non reef crest habitat",
+       x= "Geomorphic habitat type", fill= "Benthic habitat type")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+
+
+GBS<-geodat%>%
+  group_by(GEOMORPHIC, BENTHIC,  SEX)%>%
+  dplyr::summarise(count=as.numeric(n()))%>%
+  filter(!is.na(GEOMORPHIC), !is.na(BENTHIC))%>%
+  ungroup
+
+p4<-ggplot(data=GBS, aes(fill=BENTHIC, y=count, x=GEOMORPHIC))+
+  geom_bar(position="stack", stat="identity")+
+  facet_grid(~SEX)+
+  labs(y="Number of observations (GPS points)\non reef crest habitat",
+       x= "Geomorphic habitat type", fill= "Benthic habitat type")+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+fplot<-(p2) / (p3)/ (p4)+ plot_annotation(tag_levels = 'A')
+fplot
+
+```
+
+\newpage
+
+# Turbidity
+
+
+
+
+```{r echo=FALSE, fig.height=9.7, fig.width=8.3, message=FALSE, warning=FALSE, turb, results='hide', paged.print=FALSE, fig.cap = "Figure S3 | Turbidity things. C. Quarterly turbidity and 95% KDE values. B. Response of 95% KDE sizes to tubidity, averaged qurterly. C. Monthly turbidity and 95% KDE values. D. Response of 95% KDE sizes to tubidity, averaged monthly"}
+
+
+qdf<-readRDS("../../data/qdfTurb.rds")
+
+# is there a lag effect?
+# WTF, lower turbidity correlates with higher KDEs??
+fqdf<-qdf%>%
+  filter(year %in% c(2020,2021,2022))
+
+p1<-ggplot()+
+  geom_point(fqdf, mapping=aes(x=as.numeric(qNum), y=scale(mean)))+
+  geom_smooth(fqdf, mapping=aes(x=as.numeric(qNum), y=scale(mean)), col='grey', se=F)+
+  geom_point(fqdf, mapping=aes(x=as.numeric(qNum), y=scale(qKDE)))+
+  geom_smooth(fqdf, mapping=aes(x=as.numeric(qNum), y=scale(qKDE)), col='black', se=F)+
+  facet_grid(~year)+
+  geom_hline(yintercept=c(-0.5, 0.5), linetpe='dashed', col='red')+
+  ggtitle("Black = KDE, Grey = Turbidity")+
+  labs(x="Year quarter", y="Mean 95% KDE", linetype="Year")+
+  theme_classic()
+
+
+
+# Clear trend in another way....
+p2<-ggplot()+
+  geom_smooth(qdf, mapping=aes(x=mean, y=qKDE), method='lm')+
+  geom_point(qdf, mapping=aes(x=mean, y=qKDE))+
+  theme_classic()+
+  labs(x="Mean quarterly turbidity (FNU)", y="Mean 95% KDE")
+
+kdedf<-readRDS("../../data/DFs/kdedf.rds")%>%
+  filter(name=="TUR_FNU")
+
+
+
+p3<-ggplot()+
+  geom_point(kdedf, mapping=aes(x=MON_YR, y=scale(value)), col='grey')+
+  geom_smooth(kdedf, mapping=aes(x=MON_YR, y=scale(value)), col='grey', method='loess', se=F)+
+  geom_point(kdedf, mapping=aes(x=MON_YR, y=scale(KDE)), col='black')+
+  geom_smooth(kdedf, mapping=aes(x=MON_YR, y=scale(KDE)), col='black', method='gam', se=F)+
+  #facet_grid(~year)+
+  geom_hline(yintercept=c(-0.5, 0.5), linetpe='dashed', col='red')+
+  ggtitle("Black = KDE, Grey = Turbidity")+
+  labs(x="Date", y="Mean 95% KDE", linetype="Year")+
+  theme_classic()
+
+
+
+p4<-kdedf%>%
+  filter(name=="TUR_FNU")%>%
+  ggplot()+
+  geom_smooth(aes(y=KDE, x=value), method='lm')+
+  geom_point(aes(y=KDE, x=value))+
+  labs(x="Turbidity averaged monthly (FNU)")+
+  theme_classic()
+
+fplot<-(p1+p2)/(p3+p4) + plot_annotation(tag_levels = 'A')
+
+
+fplot
+```
+
+
+\newpage
+
+# Temperature
+
+```{r echo=FALSE, fig.height=4, fig.width=8.3, message=FALSE, warning=FALSE, watTemp, results='hide', paged.print=FALSE, fig.cap = "Figure S4 | Pacific Reef Egret Responses to changes in tide height"}
+
+temps<-readRDS("../../data/DFs/finalTemps.rds")
+
+
+
+mtempKDE<-readRDS("../../data/DFs/mthlyTempKDE.rds")%>%
+  filter(YEAR %in% c(2020,2021,2022))
+
+# is there a lag effect?
+p1<-ggplot()+
+  geom_smooth(mtempKDE, mapping=aes(x=as.numeric(MONTH), y=scale(HERFL1)), col='purple', se=F)+
+  geom_smooth(mtempKDE, mapping=aes(x=as.numeric(MONTH), y=scale(HERSL1)), col='black', se=F)+
+  geom_smooth(mtempKDE, mapping=aes(x=as.numeric(MONTH), y=scale(mKDE)), col='grey', se=F)+
+  facet_grid(~YEAR)+
+  theme_classic()+
+  labs(y="Temperature (DegC)", x="Date (calendar months)", title = "Temperature trends or Heron Island reef \nflat (purple) and reef slope (black) and monthly 95% KDE averages (grey)")+
+  scale_x_continuous(breaks = 1:12)
+
+
+p1
+
+```
+
+
+
+# References
+
+::: {#refs}
+:::
+

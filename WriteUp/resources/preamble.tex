@@ -1,0 +1,55 @@
+% preamble.tex
+\usepackage{amsmath,amssymb}  % Math packages for equations
+\usepackage{graphicx}         % For including graphics
+\usepackage{booktabs}         % Professional tables
+\usepackage{longtable}        % Tables spanning multiple pages
+\usepackage{float}            % To manage figure placement
+\usepackage{array}            % Extended table options
+\usepackage{multirow}         % Table cells spanning multiple rows
+\usepackage{setspace}         % Line spacing control
+\usepackage{caption}          % Customize captions
+\usepackage{subcaption}       % Subfigures
+\usepackage{hyperref}         % Hyperlinks
+\usepackage{xcolor}           % Text colors
+\usepackage{geometry}         % Control page layout
+
+% Page layout
+\geometry{
+  a4paper,              % Paper size
+  margin=1in,           % 1-inch margins
+}
+
+% Line spacing
+\setstretch{1.5}         % 1.5x line spacing for readability
+
+% Paragraph settings
+\setlength{\parindent}{0pt}  % Remove paragraph indentation
+\setlength{\parskip}{1em}    % Add space between paragraphs
+
+% Caption formatting
+\captionsetup{
+  font=small,             % Small font for captions
+  labelfont=bf,           % Bold labels (e.g., Figure 1)
+  labelsep=colon,         % Separator after label
+  justification=raggedright, % Left-align captions
+  singlelinecheck=false   % Ensure captions align left for one-line captions
+}
+
+% Header and footer (using fancyhdr package)
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}  % Left header: chapter title
+\fancyhead[R]{\thepage}   % Right header: page number
+
+% Hyperlink settings
+\hypersetup{
+  colorlinks=true,        % Enable colored links
+  linkcolor=blue,         % Link color
+  citecolor=blue,         % Citation color
+  urlcolor=blue,          % URL color
+}
+
+% Additional styling (optional)
+\newcommand{\hl}[1]{\textbf{\textcolor{blue}{#1}}} % Highlight important terms
+\newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}   % TODO notes in red

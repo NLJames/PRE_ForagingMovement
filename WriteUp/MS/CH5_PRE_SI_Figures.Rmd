@@ -1,0 +1,454 @@
+---
+title: "Supporting Information: Figures"
+output:
+  bookdown::html_document2:
+    number_sections: false
+    fig_caption: true
+    table_caption: true
+    includes:
+      in_header: "../resources/headerSupp.html"
+---
+
+```{r setup, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, include=FALSE}
+library(readxl)
+library(openxlsx)
+library(tidyverse)
+library(viridis)
+library(raster)
+library(amt)
+library(purrr)
+library(adehabitatHR)
+library(Polychrome)
+library(lubridate)
+library(dataaimsr)
+library(sf)
+library(janitor)
+library(plyr)
+library(skimr)
+library(glmmTMB)
+library(effects)
+library(kableExtra)
+library(patchwork)
+library(ggrepel)
+
+
+colPal = c(
+  'navy',
+  '#0c6980',  # Deep teal
+  '#7eaba6',  # Seafoam
+  '#e3bc5d',  # Soft amber
+  '#ffd966',  # Pale gold
+  '#ff8d8d',  # Coral pink
+  '#6e2f2f',  # Deep burgundy brown (contrasts well with light tones)
+  '#344e41'   # Olive forest green (earthy and complementary)
+)
+
+# shp
+
+gbrFeat<-st_read("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/data/GBR_FEATURES/egFeats.shp", quiet=TRUE)%>%
+  st_transform(4326)
+
+# Ensure local self-contained project folders exist before any local saves below
+dir.create("../../figures", recursive = TRUE, showWarnings = FALSE)
+
+```
+
+```{r 6benthosData, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width="100%", fig.height=8, fig.cap='a) Geomorphic layer as sourced from the Allen Coral Atlas for Wistari, Heron, Sykes and One Tree reefs overlayed with all cleaned Eactern Reef Egret tracking locations with summaries for number of fixes with geomorhic types for b) morph type and, c) day or night'}
+
+
+source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/6.BenthosType.R")
+
+# Define color palette
+my_cols <- wesanderson::wes_palette("Zissou1", n = length(unique(geodat$geomorphicCover)), type = "continuous")
+
+# First plot: geomorphic classes
+island_labels <- data.frame(
+  name = c("Heron Island", "One Tree Island"),
+  lon  = c(151.914, 152.090),
+  lat  = c(-23.443, -23.503)
+)
+
+g1 <- geodat %>%
+  ggplot() +
+  geom_sf(data = geo, aes(fill = class), col = NA) +
+  scale_fill_manual(values = my_cols, name = "Geomorphic feature") +
+  geom_sf(data = lightPoints, shape = 21, fill = NA, color = "black", size = 0.5) +
+  ggrepel::geom_label_repel(data = island_labels, aes(x = lon, y = lat, label = name),
+             size = 2.5, fontface = "bold", fill = "white", label.size = 0.2,
+             nudge_x = c(-0.02, 0.02),
+             nudge_y = c(-0.02, 0.02),
+             segment.color = "red", segment.size = 0.5,
+             min.segment.length = 0) +
+  coord_sf(expand = FALSE) +
+  theme_minimal() +
+  theme(
+    plot.margin  = margin(0, 0, 0, 0),
+    legend.position = "right",
+    legend.text  = element_text(size = 7),
+    legend.title = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm")
+  )
+
+# Third plot: stacked bar by MORPH
+# Combined grouped bar: MORPH × lightPeriod facets
+geodat_summary <- geodat %>%
+  dplyr::filter(geomorphicCover != "Island", !is.na(geomorphicCover)) %>%
+  group_by(geomorphicCover, MORPH, lightPeriod) %>%
+  dplyr::summarise(count = n(), .groups = "drop")
+
+gBar <- ggplot(geodat_summary, aes(x = geomorphicCover, y = count, fill = MORPH)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~lightPeriod) +
+  scale_fill_manual(values = colPal[c(1, 6)]) +
+  coord_flip() +
+  labs(x = NULL, y = "Number of fixes", fill = "Morph") +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(face = "bold", size = 10),
+    axis.text = element_text(size = 9)
+  )
+
+layout <- "
+AAAA
+AAAA
+AAAA
+BBBB
+BBBB
+"
+
+geoPlot <- g1 / gBar +
+  plot_layout(design = layout) +
+  plot_annotation(tag_levels = 'a')
+
+geoPlot
+
+saveRDS(geodat, "~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/data/DFs/benthosFinal.rds")
+
+saveRDS(geoPlot,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/CH6_AppFig4_geomorphology.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(geoPlot,"../../figures/CH6_AppFig4_geomorphology.rds")
+  ggsave("../../figures/CH6_AppFig4_geomorphology.png", geoPlot, width = 9, height = 9, dpi = 300)
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_AppFig4): ", conditionMessage(e)))
+
+```
+
+```{r 6benthosData2, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width="100%", fig.cap="Number of GPS fixes in each geomorphic cover type with 50th (solid black line), 75th (dashed black line) and 95th percentiles (solid red line) with values indicated in the top right hand corner."}
+
+source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/6.BenthosType.R")
+
+
+
+# 1. Quantiles
+quarts <- geodat %>%
+  st_drop_geometry()%>%
+  dplyr::group_by(geomorphicCover) %>%
+  dplyr::summarise(
+    Q2 = quantile(nearestTide, 0.50, na.rm = TRUE),
+    Q3 = quantile(nearestTide, 0.75, na.rm = TRUE),
+    Q95 = quantile(nearestTide, 0.95, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    label = paste0(
+      "Q50: ", round(Q2, 2), "\n",
+      "Q75: ", round(Q3, 2), "\n",
+      "Q95: ", round(Q95, 2))
+  )
+
+# 2. Max y per facet
+max_y <- geodat %>%
+    st_drop_geometry()%>%
+  dplyr::group_by(geomorphicCover) %>%
+  dplyr::summarise(y_max = max(table(cut(nearestTide, breaks = seq(min(nearestTide), max(nearestTide), by = 0.1)))), .groups = "drop")
+
+# 3. Join + max x (for top-right corner)
+max_x <- geodat %>%
+  dplyr::group_by(geomorphicCover) %>%
+  dplyr::summarise(x_max = max(nearestTide, na.rm = TRUE), .groups = "drop")
+
+quarts_labeled <- quarts %>%
+  dplyr::left_join(max_y, by = "geomorphicCover") %>%
+  dplyr::left_join(max_x, by = "geomorphicCover")
+
+# 4. Plot
+# Step 1: Filter and drop unused levels (in correct order)
+geodat_clean <- geodat %>%
+  dplyr::filter(!is.na(geomorphicCover)) %>%
+  dplyr::mutate(geomorphicCover = factor(geomorphicCover))  # Now a factor with only used levels
+
+# Step 2: Also clean the summary data (used in vlines/labels)
+quarts_clean <- quarts_labeled %>%
+  dplyr::filter(geomorphicCover %in% unique(geodat_clean$geomorphicCover)) %>%
+  dplyr::mutate(geomorphicCover = factor(geomorphicCover))  # Match factor structure
+
+# Step 3: Plot
+benthPlot<-ggplot(geodat_clean, aes(x = nearestTide)) +
+  geom_histogram(binwidth = 0.1, fill = "lightblue", color = "white") +
+  geom_vline(data = quarts_clean, aes(xintercept = Q2), linetype = "solid", color = "black") +
+  geom_vline(data = quarts_clean, aes(xintercept = Q3), linetype = "dashed", color = "black") +
+  geom_vline(data = quarts_clean, aes(xintercept = Q95), linetype = "solid", color = "red") +
+  geom_text(data = quarts_clean,
+            aes(x = Inf, y = Inf, label = label),
+            hjust = 'right', vjust = 'top', size = 2.4, lineheight = 0.95,
+            inherit.aes = FALSE) +
+  facet_wrap(~ geomorphicCover, scales = "free_y", ncol = 2) +
+  labs(x = "Tide Height (m)", y = "Frequency") +
+  theme_minimal()
+
+benthPlot
+
+saveRDS(benthPlot,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/CH6_AppFig5_benthosUse.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(benthPlot,"../../figures/CH6_AppFig5_benthosUse.rds")
+  ggsave("../../figures/CH6_AppFig5_benthosUse.png", benthPlot, width = 8, height = 8, dpi = 300)
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_AppFig5): ", conditionMessage(e)))
+
+```
+
+```{r indivPlot, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', fig.height=10, fig.cap = "Monthly 95% kernel density estimates (KDE) for Reef Egrets using all GPS points (blue) and off-island points only (orange)."}
+
+# chk<-preDat%>%
+#   mutate(date = date(dateTimeUTC))%>%
+#   group_by(BandNumber, date)%>%
+#   dplyr::summarise(dayPoints = n())%>%
+#   ungroup
+# 
+# idPlots<-ggplot()+
+#   geom_sf(data=gbrFeat)+
+#   geom_point(data=preDat, aes(x=x, y=y), size=0.2, col='red')+
+#   facet_wrap(~BandNumber, ncol = 4)+
+#     scale_x_continuous(breaks=c(151.3))+
+#     scale_y_continuous(breaks=c(-23.7,-23.5,-23.3))+
+#   ylim(c(-23.7,-23.17))+
+#   xlim(c(151.6,152.2))+
+#   labs(x="Longitude",y="Latitude")+
+#   theme_classic()
+# 
+# idPlots
+# 
+# saveRDS(idPlots,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/CH6_AppFig1_indivPlots.rds")
+
+#source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/kde_monthlyAnimation.R")
+
+knitr::include_graphics("../../src_outputs/kde_overlay_animation.gif")
+```
+
+```{r trackData, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, include=FALSE, out.width='100%', fig.height=8}
+
+
+#source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/1.egTracks_HI_Wist.R")
+
+#source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/2.egTracks_OTI.R")
+
+
+# preDat <- rbind(pre, oti_pre) %>%
+#   dplyr::mutate(BandNumber = as.character(BandNumber)) %>%
+#   dplyr::filter(
+#     x > 151.6, x < 152.3,
+#     y > -23.7, y < -23.3
+#   ) %>%
+#   dplyr::distinct(BandNumber, dateTimeAEST, .keep_all = TRUE) %>%
+#   droplevels() %>%
+#   dplyr::arrange(BandNumber, dateTimeUTC) %>%
+#   dplyr::group_by(BandNumber) %>%
+#   dplyr::mutate(
+#     tDiff = difftime(lead(dateTimeUTC), dateTimeUTC, units = "hours"),
+#     lagdateTimeUTC = lag(dateTimeUTC)
+#   )
+
+preDat<-readRDS("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/cleanTracks.rds")
+
+preDat%>%
+  mutate(month = lubridate::floor_date(dateTimeUTC,'month'))%>%
+  group_by(BandNumber, month)%>%
+  dplyr::summarise(weekPoints = n())%>%
+  ungroup%>%
+  ggplot(., aes(x=month, y=weekPoints))+
+  geom_point()+
+  geom_path()+
+  facet_wrap(~BandNumber, ncol = 1)+
+  labs(y="AKDE", x="Date")
+
+```
+
+```{r 3DEMdat, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', fig.height=3, fig.cap = "Distribution of elevation values for both reef and island positions extracted from DEM layers, indicating bimodality likely reflecting island vs reef locations."}
+
+
+source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/3.demData.R")
+
+e1<-ggplot() +
+  geom_histogram(data = extrDEM, aes(x = finalElevation), bins = 60, fill = "steelblue", color = "black") +
+  labs(x = "Elevation (m)", y = "Count") +
+  theme_minimal()+
+  xlim(c(-10,10))
+
+e2<-extrDEM%>%
+  dplyr::filter(finalElevation>-5)%>%
+ggplot(aes(x = "", y = finalElevation)) +  # "" to avoid categorical x-axis
+  geom_violin(fill = "lightblue", color = "black") +  # Violin plot style
+  labs(y = "Elevation (m)") +
+  theme_minimal()
+
+#e1+e2
+
+saveRDS(extrDEM, "~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/finalDepth.rds") 
+
+
+```
+
+<!-- ```{r 4tideDat, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, out.width='100%', fig.height=4, fig.width=10, fig.cap="Tide heights experienced by all individuals as matched with nearest time to GPS fix for both Heron Island (HER) and One Tree Island (OTI) populations. Facets represent Neap and Spring tides, as synchronised with moon phases. Elevation represents the value extracted from each GPS fix for the nearest possible time."} -->
+
+<!-- rm(list=ls()) -->
+
+<!-- source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/4.tides.R") -->
+
+<!-- t1<-ggplot()+ -->
+
+<!--   geom_point(data=tidepts, aes(x= moonPhase, y= nearestTide, col=nearestTideCat), alpha=0.3, size=0.5)+ -->
+
+<!--   scale_colour_manual(values=c(wesanderson::wes_palette("Darjeeling1",5,'discrete')[c(1,3,5)]))+ -->
+
+<!--   facet_grid(LOCBANDED~neapSpring)+ -->
+
+<!--   theme_minimal()+ -->
+
+<!--   labs(x="Moon phase", y="Tide height", colour=NULL) -->
+
+<!-- t2<-tidepts%>% -->
+
+<!--   dplyr::filter(finalElevation>-5 & finalElevation<1.2)%>% -->
+
+<!-- ggplot() + -->
+
+<!--   geom_point(aes(x=nearestTide, y=finalElevation, col=nearestTideCat), size=0.5) + -->
+
+<!--   geom_smooth(aes(x=nearestTide, y=finalElevation), col='black')+ -->
+
+<!--   scale_colour_manual(values=c(wesanderson::wes_palette("Darjeeling1",5,'discrete')[c(1,3,5)]))+ -->
+
+<!--   theme_minimal()+ -->
+
+<!--     facet_wrap(neapSpring~LOCBANDED, ncol=2)+ -->
+
+<!--   labs(x="Tide Height", y="Elevation", colour="Location") -->
+
+<!-- t2 -->
+
+<!-- saveRDS(tidepts,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/tidesFinal.rds") -->
+
+<!-- saveRDS(t2,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/CH6_AppFig2_tideVsElevation.rds") -->
+
+<!-- ``` -->
+
+<!-- ```{r 5lightDark, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, fig.height=4, out.width='100%', fig.cap='a) Density violin plots indicating the number of fixes observed during dark and light hours as indicated by nautical dawn and dusk times. b) Selected elevation grouped per hour of the day for all individuals of both Heron Island and One Tree Island sites.'} -->
+
+<!-- rm(list=ls()) -->
+
+<!-- source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/5.LightDark.R") -->
+
+<!-- tod1<-lightPRE %>% -->
+
+<!--   dplyr::filter(actualDepth > -5) %>%  # Filter depths greater than -5m -->
+
+<!--   ggplot(aes(x = lightPeriod, y = actualDepth)) +   -->
+
+<!--   geom_violin(aes(fill = lightPeriod), color = "black", adjust = 1) +  # Violin plot style -->
+
+<!--   scale_y_continuous( -->
+
+<!--     breaks = seq(floor(min(lightPRE$actualDepth, na.rm = TRUE)),  -->
+
+<!--                  ceiling(max(lightPRE$actualDepth, na.rm = TRUE)),  -->
+
+<!--                  by = 1)  # Label every integer -->
+
+<!--   ) + -->
+
+<!--   scale_fill_manual(values=c("grey","gold"))+ -->
+
+<!--   labs(y = "Actual Depth (m)",  -->
+
+<!--        x= NULL) + -->
+
+<!--     guides(fill = FALSE)+ -->
+
+<!--   theme_minimal() -->
+
+<!-- tod2<-lightPRE%>% -->
+
+<!--   dplyr::filter(actualDepth<2 & actualDepth>-2)%>% -->
+
+<!--   ggplot()+ -->
+
+<!--   geom_boxplot(aes(x=TOD, y=actualDepth, group=TOD, fill=lightPeriod))+ -->
+
+<!--   geom_smooth(aes(x=TOD, y=actualDepth))+ -->
+
+<!--   theme_minimal()+ -->
+
+<!--   labs(y = "Elevation (m)", x="Time of day") -->
+
+<!-- todPlot<-tod1+tod2+plot_layout(widths = c(3,6)) -->
+
+<!-- todPlot -->
+
+<!-- saveRDS(lightPRE,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/lightFinal.rds") -->
+
+<!-- saveRDS(todPlot,"~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_SEABIRDS_2025/figures/CH6_AppFig3_depthVSlight.rds") -->
+
+<!-- ``` -->
+
+<!-- ```{r 7waterTemp, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, fig.height=c(15), include=FALSE} -->
+
+<!-- source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/7.waterTemps.R") -->
+
+<!-- all_joined%>% -->
+
+<!-- ggplot()+ -->
+
+<!--   geom_point(aes(x=month, y=flatTemp), col='brown', alpha=0.2) + -->
+
+<!--   geom_point(aes(x=month, y=slopeTemp), col='grey', aplha=0.2)+ -->
+
+<!--   theme_minimal()+ -->
+
+<!--   labs(x='Month', y="Temp DegC", title = "Reef Flat and Slope temperatures over multiple years - Heron Island", -->
+
+<!--        subtitle = "Brown = Reef Flat (1m), Grey = Reef Slope (8.5m)") -->
+
+<!-- saveRDS(all_joined, "~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/finalTemp.rds") -->
+
+<!-- ``` -->
+
+```{r kde, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE, include=FALSE,fig.height=6}
+
+bandSex<-readRDS("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/finalTemp.rds")%>%
+  distinct(BandNumber, SEX)
+
+Sexcols <- wesanderson::wes_palette("Zissou1", n = 5, type = "discrete")%>%
+  .[c(5,2)]
+
+akdeDFmonthly<-readRDS("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/akde_monthlyFinal.rds")%>%
+  mutate(month=month(date),
+         BandNumber = str_replace(BandNumber, "^X(\\d+)\\.(\\d+)$", "\\1-\\2"))%>%
+  arrange(month)%>%
+  left_join(bandSex)
+
+
+ggplot()+
+  geom_boxplot(data=akdeDFmonthly, aes(x=month, y=CI_Estimate, group=interaction(month, SEX), col=SEX))+
+  labs(colour = NULL)+
+  scale_colour_manual(values=Sexcols)+
+  theme_classic()
+
+
+
+
+```

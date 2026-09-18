@@ -1,0 +1,97 @@
+---
+title: "Final plots"
+format: docx
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| warning: false
+#| echo: false
+#| message: false
+#| results: hide
+
+library(tidyverse)
+library(ggplot2)
+library(mgcv)
+library(Ecfun)
+library(mgcv)      #for GAMs
+library(gratia)    #for GAM plots
+library(emmeans)   #for marginal means etc
+library(broom)     #for tidy output
+library(MuMIn)     #for model selection and AICc
+library(lubridate) #for processing dates
+library(tidyverse) #for data wrangling
+library(DHARMa)    #for residuals diagnostics
+#library(performance) #for residual disagnostics
+#library(see)        # to visualize residual diagnostics
+library(patchwork) #for grids of plots
+library(lubridate)
+library(ggeffects)
+library(wesanderson)
+
+```
+
+# Foraging effort
+
+```{r}
+#| label: forg
+#| warning: false
+#| echo: false
+#| message: false
+#| fig-cap: Figure 1. Seasonal trend in foraging effort in Pacific Reef Egrets (Egretta sacra) from 15/11/2019 to 29/04/2023 in the southern Great Barrier Reef. Foraging territories expressed as 95% kernel density estimates (KDE) per month, per individual.
+
+# TIME variable already converted as numeric for dates
+monthlyKDE<-readRDS("../../data/DFs/monthlyKDE.rds")%>%
+  mutate(MORPH=as.factor(MORPH),
+         MONTH = as.numeric(substr(MonYr, 6,7)))
+
+# SEX ratios - only one white female...
+# F	Grey	3		
+# F	White	1		
+# M	Grey	2		
+# M	White	4	
+
+gam3<-gam(kde ~  s(MONTH, by=SEX, bs='cc') + YEAR + s(BandNumber, bs = 're'),
+          
+          data = monthlyKDE,
+          family=gaussian(link='log'),
+          method = "REML")
+
+
+prels = with(monthlyKDE,
+             list(MONTH=seq(min(MONTH), max(MONTH), len=6000),
+                  TIME=seq(min(TIME), max(TIME), len=6000),
+                  BandNumber=sample(BandNumber, size=6000, replace=T),
+                  SEX=sample(SEX, size=6000, replace=T),
+                  YEAR=sample(YEAR, size=6000, replace=T)))
+
+preds<-predict.gam(gam3, newdata = prels, 
+                   type = 'response', 
+                   exclude = c("s(BandNumber)"),
+                   se.fit=TRUE)
+
+
+preDF<-prels%>%data.frame()%>%cbind(.,preds)
+
+head(preDF,20)
+
+library(wesanderson)
+
+
+pal<-wes_palette("Royal2")
+
+
+forgkde<-ggplot() +
+  geom_line(data=preDF, aes(y=fit, x=MONTH, group=interaction(YEAR, SEX), linetype=YEAR, col=SEX), size=1)+ #group = interaction(replicate, lane),colour = lane
+  scale_color_manual(values = c(pal[c(3,5)])) +
+  labs() +
+  theme_classic()+
+  scale_x_continuous(breaks = 1:12)+
+  labs(y="95% KDE (km^2)", x="Month", linetype='Year', col="Sex")
+
+
+saveRDS(forgkde, "../../WriteUp/Figures/forgkde.rds")
+
+forgkde
+```

@@ -1,0 +1,375 @@
+---
+title: "Figures"
+output: 
+  bookdown::html_document2:
+    number_sections: false
+---
+
+```{r setupFigs, include=FALSE}
+library(tidyverse)
+library(momentuHMM)
+library(patchwork)
+library(kableExtra)
+library(ggforce)
+library(wesanderson)
+library(glmmTMB)
+library(splines)
+library(ggridges)
+
+
+
+knitr::opts_chunk$set(echo = FALSE)
+
+colPal = c(
+  'navy',
+  '#0c6980',  # Deep teal
+  '#7eaba6',  # Seafoam
+  '#e3bc5d',  # Soft amber
+  '#ffd966',  # Pale gold
+  '#ff8d8d',  # Coral pink
+  '#6e2f2f',  # Deep burgundy brown (contrasts well with light tones)
+  '#344e41'   # Olive forest green (earthy and complementary)
+)
+
+Sexcols <- colPal[c(7,5)]
+
+# grab custom ggplot theme + theme_nature()
+source("../../../CH2_BNForg/Scripts-HMM/src/natureTheme.R")
+
+# Ensure local self-contained project folder exists before any local saves below
+dir.create("../../figures", recursive = TRUE, showWarnings = FALSE)
+
+```
+
+```{r forgMod1, message=FALSE,echo=FALSE,error=FALSE,warning=FALSE}
+
+#source("../../src/12.ForagingModel.R")
+
+# Build the grid
+forgModFinal <- readRDS(file = "../../src_outputs/bestForgMod.rds")
+environment(forgModFinal$call$formula) <- environment()
+
+grid_4way <- expand.grid(
+  nearestTide = seq(0,3.6,length.out = 100),
+  moonFraction = c(0, 0.25, 0.5, 0.75, 1),
+  lightPeriod = levels(forgModFinal$frame$lightPeriod),
+  season = levels(forgModFinal$frame$season)
+) %>%
+  mutate(
+    LOCBANDED = factor("HER", levels = levels(forgModFinal$frame$LOCBANDED)),
+    BandNumber = as.character("101-18502")
+  )
+
+# Build the spline basis
+spline_cols <- ns(
+  x = grid_4way$nearestTide,
+  knots = c(0.913, 1.323, 1.793, 2.267),
+  Boundary.knots = c(0.013, 3.505),
+  intercept = FALSE
+)
+
+colnames(spline_cols) <- colnames(forgModFinal$frame[, grepl("^ns\\(nearestTide", colnames(forgModFinal$frame))])
+
+# Bind spline columns but DO NOT drop nearestTide
+grid_4way <- cbind(grid_4way, as.data.frame(spline_cols))
+
+# Now build model matrix
+mm <- model.matrix(
+  delete.response(terms(forgModFinal)),
+  data = grid_4way,
+  contrasts.arg = forgModFinal$frame$contrasts
+)
+
+# Manually predict
+lp <- mm %*% fixef(forgModFinal)$cond
+grid_4way$pred <- plogis(lp)
+
+
+
+grid_4way$season<-factor(grid_4way$season, levels = c( "Autumn", "Winter", "Spring", "Summer"))
+
+p1 <- ggplot(grid_4way%>%dplyr::filter(lightPeriod=="Dark"), aes(x = nearestTide, y = pred, color = factor(moonFraction))) +
+  geom_line(size = 1) +
+  scale_colour_manual(values=colPal[2:6])+
+  facet_wrap(~ season, ncol = 1) +
+  labs(
+    x = "Tide Height (m)",
+    y = "P(On the island)",
+    color = "Moon Fraction"  ) +
+  theme_minimal(base_size = 13)+
+    theme_nature()+
+  xlim(c(0,3))
+```
+
+```{r forgMod2, message=FALSE,echo=FALSE,error=FALSE,warning=FALSE, fig.width=9, fig.height=5, out.width='100%', fig.cap="a) Predicted probability of Pacific Reef Egrets being on-colony across tide heights under varying moon fraction (moon illumination) conditions, and seasons at night. Facets separate combinations of season and moon fraction. b) Colony-specific on-colony probability predictions in response to tide heights in Eastern Reef Egrets from Heron Island and One Tree Island during the summer season, under day conditions and 50% moon illumination. Dotted line (1.5m) represents 95th percentile tide height for access to reef crest foraging areas, dashed line (2m) represents 95th percentile tide height for access to outer reef flat."}
+
+# 1. Build the grid
+grid_colony <- expand.grid(
+  nearestTide = seq(0, 3.6, length.out = 100),
+  LOCBANDED = levels(forgModFinal$frame$LOCBANDED)
+) %>%
+  mutate(
+    moonFraction = 0.5,
+    lightPeriod = factor("Light", levels = levels(forgModFinal$frame$lightPeriod)),
+    season = factor("Summer", levels = levels(forgModFinal$frame$season)),
+    BandNumber = as.character("101-18502")   # must not be NA
+  )
+
+# 2. Build spline basis manually
+spline_cols <- ns(
+  x = grid_colony$nearestTide,
+  knots = c(0.913, 1.323, 1.793, 2.267),
+  Boundary.knots = c(0.013, 3.505),
+  intercept = FALSE
+)
+
+colnames(spline_cols) <- colnames(forgModFinal$frame[, grepl("^ns\\(nearestTide", colnames(forgModFinal$frame))])
+
+# 3. Bind spline basis (keep nearestTide!)
+grid_colony <- cbind(grid_colony, as.data.frame(spline_cols))
+
+# 4. Predict manually
+# Build model matrix
+mm_colony <- model.matrix(
+  delete.response(terms(forgModFinal)),
+  data = grid_colony,
+  contrasts.arg = forgModFinal$frame$contrasts
+)
+
+# Manual prediction
+lp_colony <- mm_colony %*% fixef(forgModFinal)$cond
+grid_colony$pred <- plogis(lp_colony)
+
+p2 <- ggplot(grid_colony, aes(x = nearestTide, y = pred, color = LOCBANDED)) +
+  geom_line(size = 1.2) +
+  scale_colour_manual(values=colPal[c(2,6)])+
+  labs(
+    x = "Tide Height (m)",
+    y = "P(On the island)",
+    color = "Colony"  ) +
+  geom_vline(xintercept = 1.5, linetype='dotted')+
+  geom_vline(xintercept = 2, linetype='dashed')+
+  theme_minimal(base_size = 13)+
+  theme_nature()
+
+forage_tide_moon<-p1+p2+plot_annotation(tag_levels = 'a')+plot_layout(widths = c(2,3))
+
+saveRDS(forage_tide_moon, "~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig1_forageEnvironmentalInteractions.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(forage_tide_moon, "../../figures/CH6_Fig1_forageEnvironmentalInteractions.rds")
+  ggsave("../../figures/CH6_Fig1_forageEnvironmentalInteractions.png", forage_tide_moon, width = 9, height = 5, dpi = 300)
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_Fig1): ", conditionMessage(e)))
+
+forage_tide_moon
+```
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+library(latex2exp)
+kdeSeasonPlot<-readRDS("../../src_outputs/kdeMonthlyPlot_GAMM.rds")+ 
+  scale_colour_manual(values=Sexcols)+
+  scale_fill_manual(values=Sexcols)+
+  theme_nature()
+
+kdeTidePlot<-readRDS("../../src_outputs/kdeTidePlot_GAMM.rds")+
+  geom_line(col=colPal[c(3)])+
+  theme_nature()
+
+
+saveRDS(kdeSeasonPlot,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig2a_kdeSeasonPlot.rds")
+saveRDS(kdeTidePlot,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig2c_kdeTidePlot.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(kdeSeasonPlot,"../../figures/CH6_Fig2a_kdeSeasonPlot.rds")
+  saveRDS(kdeTidePlot,"../../figures/CH6_Fig2c_kdeTidePlot.rds")
+  ggsave("../../figures/CH6_Fig2a_kdeSeasonPlot.png", kdeSeasonPlot, width = 7, height = 5, dpi = 300)
+  ggsave("../../figures/CH6_Fig2c_kdeTidePlot.png", kdeTidePlot, width = 7, height = 5, dpi = 300)
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_Fig2a/2c): ", conditionMessage(e)))
+
+```
+
+```{r kdeFidelityGAMMs, message=FALSE, warning=FALSE, error=FALSE, fig.width=9, fig.height=7, echo=FALSE,out.width='100%',fig.cap="a) Predicted seasonal changes in 95% kernel density estimate (KDE) area for males and females, reflecting the extent of individual foraging ranges, island locations not included. Estimates are conditional on average daytime tide height b) Effect of monthly mean daytime tide height on KDE area, with predictions conditioned on female sex and the month of June as reference levels for factor variables c) Predicted change in site fidelity (Bhattacharyya’s Affinity index) with increasing time between monthly observations, by sex d) Predicted seasonal variation in foraging site fidelity by sex. Shaded ribbons show 95% confidence intervals in all panels."}
+
+fidelitySeasonPlot<-readRDS("../../src_outputs/fidelitySeasonPlot_GAMM.rds")+ 
+  scale_colour_manual(values=Sexcols)+
+  scale_fill_manual(values=Sexcols)+
+  theme_nature()
+fidelityIntervalPlot<-readRDS("../../src_outputs/fidelityIntervalPlot_GAMM.rds")+ 
+  scale_colour_manual(values=Sexcols)+
+  scale_fill_manual(values=Sexcols)+
+  theme_nature()
+
+saveRDS(fidelitySeasonPlot,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig2b_fidelitySeasonPlot.rds")
+saveRDS(fidelityIntervalPlot,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig2d_fidelityIntervalPlot.rds")
+
+# Local copy for self-contained project folder (for sharing with reviewers)
+# Wrapped in tryCatch so a local sync/permissions issue never halts the render
+tryCatch({
+  saveRDS(fidelitySeasonPlot,"../../figures/CH6_Fig2b_fidelitySeasonPlot.rds")
+  saveRDS(fidelityIntervalPlot,"../../figures/CH6_Fig2d_fidelityIntervalPlot.rds")
+  ggsave("../../figures/CH6_Fig2b_fidelitySeasonPlot.png", fidelitySeasonPlot, width = 7, height = 5, dpi = 300)
+  ggsave("../../figures/CH6_Fig2d_fidelityIntervalPlot.png", fidelityIntervalPlot, width = 7, height = 5, dpi = 300)
+}, error = function(e) message("Local reviewer-copy save skipped (CH6_Fig2b/2d): ", conditionMessage(e)))
+
+(kdeSeasonPlot + fidelitySeasonPlot)/(kdeTidePlot + fidelityIntervalPlot)+plot_layout(tag_level = 'new', guides = 'collect') +
+  plot_annotation(tag_levels = list(c('a', 'c','b','d'), '1'))
+
+```
+
+<!-- ```{r akdeGAMM, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE,out.width='100%',fig.cap="Monthly changes in space use of adult Pacific Reef Egrets estimated using autocorrelated kernel density estimates (AKDE). Lines show the mean predicted area used (km²) by sex across months from generalized additive mixed models (GAMMs), with shaded ribbons indicating 95% confidence intervals. Predictions account for repeated sampling of individuals."} -->
+
+<!-- bandSex<-readRDS("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/finalTemp.rds")%>% -->
+
+<!--   distinct(BandNumber, SEX) -->
+
+<!-- akdeDFweekly<-readRDS("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src_outputs/akde_weeklyFinal.rds")%>% -->
+
+<!--   mutate(month=month(date), -->
+
+<!--          BandNumber = str_replace(BandNumber, "^X(\\d+)\\.(\\d+)$", "\\1-\\2"))%>% -->
+
+<!--   arrange(month)%>% -->
+
+<!--   left_join(bandSex) -->
+
+<!-- source("~/Library/CloudStorage/OneDrive-JamesCookUniversity/Projects/THESIS_PHD_NLJ_2024/CH5_PREForaging/src/9.1AKDE_monthlyGAMM.R") -->
+
+<!--  -->
+
+<!-- # Plot -->
+
+<!-- ereAKDE<-ggplot(newgrid, aes(x = month, y = fit, color = SEX, fill = SEX)) + -->
+
+<!--   geom_line(size = 1) + -->
+
+<!--   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) + -->
+
+<!--   scale_x_continuous(breaks = 1:12, labels = month.abb) + -->
+
+<!--   scale_colour_manual(values=Sexcols)+ -->
+
+<!--   scale_fill_manual(values=Sexcols)+ -->
+
+<!--   labs( -->
+
+<!--     x = "Month", -->
+
+<!--     y = "Estimated AKDE (km²)", -->
+
+<!--     color = "Sex", -->
+
+<!--     fill = "Sex" -->
+
+<!--   ) + -->
+
+<!--   theme_minimal(base_size = 14) -->
+
+<!-- saveRDS(ereAKDE,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig1_ereAKDE.rds") -->
+
+<!-- ereAKDE -->
+
+<!-- ``` -->
+
+<!-- ```{r tideForecasts,message=FALSE,echo=FALSE,error=FALSE,warning=FALSE, out.width='100%', fig.cap="Distribution of tide heights under current, mild and extreme sea level rise scenarios. Dotted line (tide height = 1.5m) indicates the 95th percentile tide height for foraging on the reef crest, dashed line (tide height = 2m) represents 95th percentile for foraging on outer reef slope. Values to the right of density ridges indicate the proportion of tide values that would be below identified thresholds under 2100 climate change scenarios. The foraging model predicts that for tide heights greater than 2m, Eastern Reef Egrets have >95% chance of being on the island (not able to forage on the reef)."} -->
+
+<!-- fHI<-read.csv("../../data/BOM_TIDE/tides_HI.csv") -->
+
+<!-- names(fHI)<-c("dateTime", "heronTide") -->
+
+<!-- fOTI<-read.csv("../../data/BOM_TIDE/tides_OTI.csv") -->
+
+<!-- names(fOTI)<-c("dateTime", "OneTreeTide") -->
+
+<!-- tides<-left_join(fHI, fOTI)%>% -->
+
+<!-- dplyr::filter(heronTide!="Prediction")%>% -->
+
+<!--   mutate("Heron Island"=as.numeric(heronTide), -->
+
+<!--          "One Tree Island"=as.numeric(OneTreeTide), -->
+
+<!--     "Heron Island +0.3m"=heronTide+0.3, -->
+
+<!--          "One Tree Island +0.3m"=OneTreeTide+0.3, -->
+
+<!--          "Heron Island +1.9m"=heronTide+1.9, -->
+
+<!--          "One Tree Island +1.9m"=OneTreeTide+1.9)%>% -->
+
+<!--   pivot_longer(cols=c(`One Tree Island`, `Heron Island`, -->
+
+<!--                       `Heron Island +0.3m`,`One Tree Island +0.3m`, -->
+
+<!--                       `Heron Island +1.9m`, `One Tree Island +1.9m`), values_to = "tideHeight", names_to = "scenario")%>% -->
+
+<!--   mutate(scenario=factor(as.factor(scenario), levels=rev(c( -->
+
+<!--     "Heron Island", "One Tree Island", -->
+
+<!--     "Heron Island +0.3m", "One Tree Island +0.3m", -->
+
+<!--     "Heron Island +1.9m", "One Tree Island +1.9m"))))%>% -->
+
+<!--   dplyr::select(-c(heronTide,OneTreeTide)) -->
+
+<!-- # 1. Calculate tide percentage summaries -->
+
+<!-- tideProps <- tides %>% -->
+
+<!--   dplyr::group_by(scenario) %>% -->
+
+<!--   dplyr::summarise( -->
+
+<!--     below1.5 = round(100 * sum(tideHeight < 1.5, na.rm = TRUE) / n(), 1), -->
+
+<!--     below2   = round(100 * sum(tideHeight < 2, na.rm = TRUE) / n(), 1) -->
+
+<!--   ) %>% -->
+
+<!--   dplyr::mutate(label = paste0(below1.5, "% <1.5m\n", below2, "% <2m")) -->
+
+<!-- # 2. Join back to original `tides` data -->
+
+<!-- tides_labeled <- dplyr::left_join(tides, tideProps, by = "scenario") -->
+
+<!-- # 3. Plot with labels -->
+
+<!-- seaLevelScenarios<-ggplot(tides_labeled, aes(y = scenario, x = tideHeight, fill = after_stat(x))) + -->
+
+<!--   ggridges::geom_density_ridges_gradient(quantiles = 2, quantile_lines = TRUE, col = 'black') + -->
+
+<!--   scale_fill_gradientn(colours = colPal[1:7], name = "Tide Height") + -->
+
+<!--   geom_vline(xintercept = 1.52, linetype = 'dotted') + -->
+
+<!--   geom_vline(xintercept = 2.00, linetype = 'dashed') + -->
+
+<!--   geom_text( -->
+
+<!--     data = tideProps, -->
+
+<!--     aes(x = 5.8, y = scenario, label = label),  # adjust x to suit right margin -->
+
+<!--     inherit.aes = FALSE, -->
+
+<!--     size = 3, -->
+
+<!--     vjust = -0.8, -->
+
+<!--     hjust=1 -->
+
+<!--   ) + -->
+
+<!--   labs(x = "Tide Height", y = "Sea level scenario by site") + -->
+
+<!--   theme_classic() -->
+
+<!-- saveRDS(seaLevelScenarios,"~/OneDrive - James Cook University/Projects/THESIS_SEABIRDS_2025/figures/CH6_Fig3_seaLevelScenarios.rds") -->
+
+<!-- seaLevelScenarios -->
+
+<!-- ``` -->
