@@ -43,6 +43,9 @@
 /runDown.html
 /runDown_files/
 
+# --- PRE_PrelimData (superseded, dropped from repo) ---
+/PRE_PrelimData.Rmd
+
 # --- Logs / temp ---
 *.log
 .fuse_hidden*
