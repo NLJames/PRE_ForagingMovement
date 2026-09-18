@@ -91,7 +91,7 @@ forgkde<-ggplot() +
   labs(y="95% KDE (km^2)", x="Month", linetype='Year', col="Sex")
 
 
-saveRDS(forgkde, "../../WriteUp/Figures/forgkde.rds")
+saveRDS(forgkde, "../../figures/forgkde.rds")
 
 forgkde
 ```
