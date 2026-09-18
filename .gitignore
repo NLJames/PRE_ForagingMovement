@@ -19,7 +19,6 @@
 /WriteUp/MS/*.docx
 /WriteUp/**/*.docx
 !/WriteUp/resources/*.docx
-/archive/**/*.docx
 
 # --- Large / regenerable data ---
 # Raw and reference data are large (GIS layers, ARGOS tracks, DEMs, imagery)
@@ -34,6 +33,15 @@
 /WriteUp/MS/*.gif
 /figures/*.rds
 /tables/*.rds
+
+# --- Superseded / archived material ---
+/archive/
+
+# --- runDown (superseded, dropped from repo) ---
+/runDown.Rmd
+/runDown.qmd
+/runDown.html
+/runDown_files/
 
 # --- Logs / temp ---
 *.log
